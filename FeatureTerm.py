@@ -1,35 +1,6 @@
-from nltk.featstruct import FeatStruct as _FeatStruct
+from amalgam import Category
 import feature_term_gens as ftgens
-import abc
 
-class Category(object):
-    __metaclass__ = abc.ABCMeta
-    
-    @abc.abstractmethod
-    def generalization_step(self, csp):
-        """Method documentation"""
-        return
-
-    @abc.abstractmethod
-    def pullback(self, csp, csp_gen):
-        """Method documentation"""
-        return
-    
-    def amalgamate(self, csp1, csp2, csp_gen=None):
-        # We can compute the generic space for feature terms
-        if False: # csp_gen = None
-            csp_gen = self.get_csp_gen(csp1, csp2)
-
-        csp0_gen = self.generalization_step(csp_gen)
-        csp1_gen = self.generalization_step(csp1)
-        csp2_gen = self.generalization_step(csp2)
-        csp1_pull = self.pullback(csp1_gen, csp_gen)
-        csp2_pull = self.pullback(csp2_gen, csp_gen)
-
-        csp_pull = self.pullback(csp1_pull, csp2_pull)
-        csp_blend = self.pullback(csp_pull, csp0_gen)
-
-        return csp_blend
 
 class FeatureTerm(Category): 
     def __init__(self, sorts):
@@ -47,6 +18,17 @@ class FeatureTerm(Category):
 
     def amalgamate(self, fs1, fs2):
         return super().amalgamate(fs1, fs2)
+    
+    def _subsumes(self, fs1, fs2):
+        to_gen = [fs1]
+        while bool(to_gen):
+            g, *to_gen = to_gen 
+            sort_gens = ftgens.get_all_sort_generalizations(g, self.sorts)
+            for g in sort_gens:
+                if g.subsumes(fs2):
+                    return True
+                to_gen.append(g)
+        return False
 
     def _antiunification(self, fs1, fs2):
         # There should be a simpler way for this
@@ -68,16 +50,22 @@ class FeatureTerm(Category):
             fs[p[:-1]] = p[-1]
         return fs
 
-
 if __name__ == "__main__":
-    icon1 = ftgens.FeatStruct(leftside = ftgens.FeatStruct(right = "Rightarrow", root = "Silhouette"), rightside="Silhouette", root = "icon")
-    icon2 = ftgens.FeatStruct(rightside = ftgens.FeatStruct(left = "Leftarrow", root = "Silhouette"), leftside="Silhouette", root = "icon")
+    icon1 = ftgens.init_FeatStruct(root = "icon", leftside = ftgens.init_FeatStruct( root = "Silhouette", right = "Rightarrow"), rightside="Silhouette")
+    icon2 = ftgens.init_FeatStruct(root = "icon", rightside = ftgens.init_FeatStruct( root = "Silhouette", left = "Leftarrow"), leftside="Silhouette")
 
     sorts = {
         "Rightarrow": "Arrow",
         "Leftarrow": "Arrow",
-        "Arrow": "Symbol"
+        "Arrow": "Symbol",
+        "Silhouette": "asd",
+        "asd": "Symbol"
     }
 
+    fs1 =  ftgens.init_FeatStruct(root = "icon", rightside="Silhouette")
+    fs2 =  ftgens.init_FeatStruct(root = "asd", rightside="Symbol", leftside="asdf")
+    print(fs1.subsumes(fs2))
+
+    
     ft = FeatureTerm(sorts)
-    print(ft.amalgamate(icon1, icon2))
+    print(ft._subsumes(fs1, fs2))

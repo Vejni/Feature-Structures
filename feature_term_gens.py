@@ -9,6 +9,9 @@ def init_FeatStruct(root, features=None, **morefeatures):
     return  fs
 
 def fs_copy(fs):
+    """
+    Does a deep copy, keeping the rootnames
+    """
     def _fs_copy(temp, fs):
         for (_, temp_val), (_, val) in zip(temp.items(), fs.items()):
             if isinstance(val, FeatStruct):
@@ -63,7 +66,7 @@ def find_matching(fs, test, path = []):
     return None
 
 def find_all(fs, test):
-    """ Finds all paths to nodes which have supersorts by calling find_matching iteratively using the correct test """
+    """ Finds all paths to nodes which have supersorts by calling find_matching iteratively using the correct test. """
     fs = fs_copy(fs)
     all_paths = []
     while (path := find_matching(fs, test = test)) is not None:
@@ -75,7 +78,7 @@ def find_all(fs, test):
     return all_paths
 
 def find_all_structs(fs):
-    """ Finds all paths to non-leaf nodes by calling find_struct_matching iteratively using the correct test """
+    """ Finds all paths to non-leaf nodes by calling find_struct_matching iteratively using the correct test. """
     fs = fs_copy(fs)
     all_branch_paths = []
     while (path := find_struct_matching(fs, test = lambda x: True)) is not None:
@@ -84,12 +87,18 @@ def find_all_structs(fs):
     return  all_branch_paths
 
 def gen_step(fs, sorts):
+    """
+    Makes a generalisation step. TODO
+    """
     fs = fs_copy(fs)
     if (path := find_matching(fs, test = lambda x: x in sorts.keys())) is not None:
         fs[path[:-1]] = sorts[path[-1]]
     return fs
 
 def get_all_sort_generalizations(fs, sorts):
+    """
+    Generates all possible generalizations by replacing with sort supertypes.
+    """
     paths = find_all(fs, test = lambda x: x in sorts.keys())
     result = []
     for p in paths:
@@ -102,6 +111,9 @@ def get_all_sort_generalizations(fs, sorts):
     return result
 
 def get_all_variable_eliminations(fs, sorts):
+    """
+    Generates all possible generalizations obatined from variable eliminations.
+    """
     paths = find_all(fs, test = lambda x: x in sorts.values())
     result = []
     for p in paths:
@@ -115,6 +127,9 @@ def get_all_variable_eliminations(fs, sorts):
     return result
     
 def get_all_variable_equality_eliminations(fs, name="_copy"):
+    """
+    Generates all possible generalizations by breaking variable inequality. Root not considered.
+    """
     reentrances = fs._find_reentrances({})
     if not any(reentrances.values()):
         return []
@@ -137,7 +152,6 @@ def get_all_variable_equality_eliminations(fs, name="_copy"):
             temp = fs_copy(fs)
 
     return result
-
 
 if __name__ == "__main__":
     icon1 = init_FeatStruct(root = "icon", leftside = init_FeatStruct( root = "Silhouette", right = "Rightarrow"), rightside="Silhouette")
