@@ -106,16 +106,37 @@ def get_all_variable_eliminations(fs, sorts):
     result = []
     for p in paths:
         temp = fs_copy(fs)
-        if isinstance(p, tuple):
+        if isinstance(p, tuple) and not isinstance(temp[p[:-1]], FeatStruct):
             del temp[p[:-1]]
-        else:
+            result.append(temp)
+        elif not isinstance(temp[tuple(p)], FeatStruct):
             del temp[tuple(p)]
-        result.append(temp)
+            result.append(temp)
     return result
     
-def get_all_variable_equality_eliminations(fs):
-    paths = []
-    result = []   
+def get_all_variable_equality_eliminations(fs, name="_copy"):
+    reentrances = fs._find_reentrances({})
+    if not any(reentrances.values()):
+        return []
+
+    paths = find_all_structs(fs)
+    result = []
+    temp = fs_copy(fs) 
+    for f in fs.walk():
+        if reentrances[id(f)]:
+            f_temp = fs_copy(f)
+            f_temp.__setattr__("root", f.root + name)
+
+            # Need to find the path
+            for p in paths:
+                if fs[p] == f:
+                    temp[p] = f_temp
+                    break
+
+            result.append(temp)
+            temp = fs_copy(fs)
+
+    return result
 
 
 if __name__ == "__main__":
@@ -130,5 +151,12 @@ if __name__ == "__main__":
     }
 
 
-    fs = get_all_sort_generalizations(icon1, sorts)[1]
-    print(get_all_variable_eliminations(fs, sorts))
+    fs = get_all_sort_generalizations(icon1, sorts)
+    for f in fs:
+        print(get_all_variable_eliminations(f, sorts))
+    
+    f = init_FeatStruct(root="reentrant", feature="value")
+    fs = init_FeatStruct(root="root", left=f, right=init_FeatStruct(root="mid", a=f))
+    print(fs)
+
+    print(get_all_variable_equality_eliminations(fs))
