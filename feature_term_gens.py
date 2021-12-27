@@ -105,6 +105,7 @@ def get_all_variable_eliminations(fs, sorts):
 def get_all_variable_equality_eliminations(fs, name="_copy"):
     """
     Generates all possible generalizations by breaking variable inequality. Root not considered.
+    TODO repeated reentrances all possibilities
     """
 
     # If there are no reentrances there is nothing to check
@@ -112,6 +113,7 @@ def get_all_variable_equality_eliminations(fs, name="_copy"):
     if not any(reentrances.values()):
         return []
 
+    # Need path for breaking equality
     paths = [tuple(p) for p in get_all_paths(fs, only_leaves=False) if isinstance(p, list)]
     result = []
     temp = fs_copy(fs) 
@@ -124,12 +126,32 @@ def get_all_variable_equality_eliminations(fs, name="_copy"):
             for p in paths:
                 if fs[p] == f:
                     temp[p] = f_temp
+                    temp = fs_copy(fs)
+                    result.append(temp)
                     break
 
-            result.append(temp)
-            temp = fs_copy(fs)
+    return result
+
+def get_all_root_variable_equality_eliminations(fs, name="_copy"):
+    """
+    Split root variable equality
+    """
+    if len(fs.keys()) < 2:
+        return []
+
+    result = []
+    temp = fs_copy(fs) 
+    for f in fs.keys():
+        root_copy = init_FeatStruct(fs.root + name, {f: fs[f]})
+        del temp[f]
+        root_fs = init_FeatStruct(root="new", root1=root_copy, root2=temp)
+        result.append(root_fs)
+        temp = fs_copy(fs)
 
     return result
+
+def gen_step(fs, sorts):
+    return 
 
 if __name__ == "__main__":
     icon1 = init_FeatStruct(root = "icon", leftside = init_FeatStruct( root = "Silhouette", right = "Rightarrow"), rightside="Silhouette")
@@ -148,7 +170,10 @@ if __name__ == "__main__":
         print(get_all_variable_eliminations(f, sorts))
     
     f = init_FeatStruct(root="reentrant", feature="value")
-    fs = init_FeatStruct(root="root", left=f, right=init_FeatStruct(root="mid", a=f))
+    fs = init_FeatStruct(root="root", left=f, middle=init_FeatStruct(root="asd", b=f), right=init_FeatStruct(root="mid", a=f))
     print(fs)
 
     print(get_all_variable_equality_eliminations(fs))
+
+    for i in get_all_root_variable_equality_eliminations(fs):
+        print(i)
