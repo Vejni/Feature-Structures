@@ -151,7 +151,7 @@ def get_all_root_variable_equality_eliminations(fs, name="_copy"):
     return result
 
 def gen_step(fs, sorts):
-    return 
+    return get_all_sort_generalizations(fs, sorts) + get_all_variable_eliminations(fs, sorts) + get_all_variable_equality_eliminations(fs) +  get_all_root_variable_equality_eliminations(fs)
 
 if __name__ == "__main__":
     icon1 = init_FeatStruct(root = "icon", leftside = init_FeatStruct( root = "Silhouette", right = "Rightarrow"), rightside="Silhouette")

@@ -20,28 +20,41 @@ class FeatureTerm(Category):
         return super().amalgamate(fs1, fs2)
     
     def _root_check(self, fs1, fs2):
-        print(set([fs.root for fs in fs1.walk()]))
         return set([fs.root for fs in fs1.walk()]) == set([fs.root for fs in fs2.walk()])
+
+    def _most_general_sort(self, fs):
+        # Checks if fs is already most general with sort generalisation
+        root_sorts = [f.root not in self.sorts for f in fs.walk()]
+        leaf_sorts = [p[:-1] not in self.sorts for p in ftgens.get_all_paths(fs, only_leaves=True)]
+        return all(root_sorts + leaf_sorts)
 
     def _subsumes(self, fs1, fs2):
         if fs1.subsumes(fs2):
             return True
 
+        # Initialise Queue
         to_gen = [fs1]
         while bool(to_gen):
+            # Dequeue
             g, *to_gen = to_gen 
             sort_gens = ftgens.get_all_sort_generalizations(g, self.sorts)
+
+            # Check if the generalisation subsumes the feature struct
             for g in sort_gens:
                 if g.subsumes(fs2) and self._root_check(g, fs2):
                     return True
-                to_gen.append(g)
+                
+                # if g not most general
+                if not self._most_general_sort(g):
+                    # Enqueue
+                    to_gen.append(g)
         return False
 
     def _antiunification(self, fs1, fs2):
         # There should be a simpler way for this
         # Get all value paths (+ some extra)
-        fs1_paths = ftgens.find_all_leaves(fs1) + ftgens.find_all_structs(fs1)
-        fs2_paths = ftgens.find_all_leaves(fs2) + ftgens.find_all_structs(fs2)
+        fs1_paths = ftgens.get_all_paths(fs1)
+        fs2_paths = ftgens.get_all_paths(fs2)
 
         # Get common paths
         fs_paths = []
