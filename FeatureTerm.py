@@ -19,13 +19,20 @@ class FeatureTerm(Category):
     def amalgamate(self, fs1, fs2):
         return super().amalgamate(fs1, fs2)
     
+    def _root_check(self, fs1, fs2):
+        print(set([fs.root for fs in fs1.walk()]))
+        return set([fs.root for fs in fs1.walk()]) == set([fs.root for fs in fs2.walk()])
+
     def _subsumes(self, fs1, fs2):
+        if fs1.subsumes(fs2):
+            return True
+
         to_gen = [fs1]
         while bool(to_gen):
             g, *to_gen = to_gen 
             sort_gens = ftgens.get_all_sort_generalizations(g, self.sorts)
             for g in sort_gens:
-                if g.subsumes(fs2):
+                if g.subsumes(fs2) and self._root_check(g, fs2):
                     return True
                 to_gen.append(g)
         return False
@@ -62,7 +69,7 @@ if __name__ == "__main__":
         "asd": "Symbol"
     }
 
-    fs1 =  ftgens.init_FeatStruct(root = "icon", rightside="Silhouette")
+    fs1 =  ftgens.init_FeatStruct(root = "Silhouette", rightside="Silhouette")
     fs2 =  ftgens.init_FeatStruct(root = "asd", rightside="Symbol", leftside="asdf")
     print(fs1.subsumes(fs2))
 

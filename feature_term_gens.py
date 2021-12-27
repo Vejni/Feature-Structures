@@ -27,102 +27,78 @@ def fs_copy(fs):
 
     return temp
 
-
-def find_struct_matching(fs, test, path = []):
-    """ 
-    Finds the path and value of the first node matching our criterion
-    in depth first search order. Works recursively. 
-    Reentrances supported but I don't know why.
-    Returns (None, None) if no node have been found.
+def get_all_paths(fs, only_leaves=False):
     """
-    for feature, value in fs.items():
-        if isinstance(value, FeatStruct):
-            p = find_struct_matching(value, test, path + [feature])
-            if test(value):
-                if p is None:
-                    return tuple(path + [feature])
-                else:
-                    return p  
-    return None
-
-
-def find_matching(fs, test, path = []):
-    """ 
-    Finds the path and value of the first node matching our criterion
-    in depth first search order. Works recursively. 
-    Reentrances supported but I don't know why.
-    Returns (None, None) if no node have been found.
+    Gets all paths of the feature struct recurisvely.
     """
-    for feature, value in fs.items():
-        if isinstance(value, FeatStruct):
-            p = find_matching(value, test, path + [feature])
-            if p is not None:
-                return p
-            elif test(value.root):
-                return path + [feature]
-        else:
-            if test(value):
+    # Recursive Function
+    def _get_all_paths(fs, only_leaves, path=[]):
+        for feature, value in fs.items():
+            if isinstance(value, FeatStruct):
+                p = _get_all_paths(value, only_leaves, path + [feature])
+                if p is not None:
+                    return p
+                elif not only_leaves and value.root is not None:
+                    return path + [feature]
+            else:
                 return tuple(path + [feature, value])
-    return None
+        return None
 
-def find_all(fs, test):
-    """ Finds all paths to nodes which have supersorts by calling find_matching iteratively using the correct test. """
+    # The call
     fs = fs_copy(fs)
     all_paths = []
-    while (path := find_matching(fs, test = test)) is not None:
-        all_paths.append(path)
+    while (path := _get_all_paths(fs, only_leaves=only_leaves)) is not None:
         if isinstance(path, tuple):
-            fs[path[:-1]] = None
+            del fs[path[:-1]]
         else:
             fs[tuple(path)].root = None
+        all_paths.append(path)
     return all_paths
-
-def find_all_structs(fs):
-    """ Finds all paths to non-leaf nodes by calling find_struct_matching iteratively using the correct test. """
-    fs = fs_copy(fs)
-    all_branch_paths = []
-    while (path := find_struct_matching(fs, test = lambda x: True)) is not None:
-        all_branch_paths.append(path)
-        del fs[path]
-    return  all_branch_paths
-
-def gen_step(fs, sorts):
-    """
-    Makes a generalisation step. TODO
-    """
-    fs = fs_copy(fs)
-    if (path := find_matching(fs, test = lambda x: x in sorts.keys())) is not None:
-        fs[path[:-1]] = sorts[path[-1]]
-    return fs
 
 def get_all_sort_generalizations(fs, sorts):
     """
     Generates all possible generalizations by replacing with sort supertypes.
     """
-    paths = find_all(fs, test = lambda x: x in sorts.keys())
     result = []
-    for p in paths:
+
+    # Check root
+    if fs.root in sorts.keys():
         temp = fs_copy(fs)
-        if isinstance(p, tuple):
-            temp[p[:-1]] = sorts[p[-1]]
-        else:
-            temp[tuple(p)].root = sorts[temp[tuple(p)].root]
+        temp.root = sorts[fs.root]
         result.append(temp)
+
+    # For all paths
+    paths = get_all_paths(fs, only_leaves=False)
+    for p in paths:
+        sort = p[-1] if isinstance(p, tuple) else fs[tuple(p)].root
+        if sort in sorts.keys():
+            temp = fs_copy(fs)
+            if isinstance(p, tuple):
+                temp[p[:-1]] = sorts[p[-1]]
+            else:
+                temp[tuple(p)].root = sorts[temp[tuple(p)].root]
+            result.append(temp)
     return result
 
 def get_all_variable_eliminations(fs, sorts):
     """
-    Generates all possible generalizations obatined from variable eliminations.
+    Generates all possible variable eliminations.
     """
-    paths = find_all(fs, test = lambda x: x in sorts.values())
     result = []
-    for p in paths:
+
+    # Check root
+    if not len(fs.keys()) and fs.root not in sorts.keys():
         temp = fs_copy(fs)
-        if isinstance(p, tuple) and not isinstance(temp[p[:-1]], FeatStruct):
+        temp.root = sorts[fs.root]
+        result.append(temp)
+
+    # For all paths
+    paths = get_all_paths(fs, only_leaves=True)
+    for p in paths:
+        sort = p[-1] if isinstance(p, tuple) else fs[tuple(p)].root
+        if sort not in sorts.keys():
+            temp = fs_copy(fs)
             del temp[p[:-1]]
-            result.append(temp)
-        elif not isinstance(temp[tuple(p)], FeatStruct):
-            del temp[tuple(p)]
             result.append(temp)
     return result
     
@@ -130,11 +106,13 @@ def get_all_variable_equality_eliminations(fs, name="_copy"):
     """
     Generates all possible generalizations by breaking variable inequality. Root not considered.
     """
+
+    # If there are no reentrances there is nothing to check
     reentrances = fs._find_reentrances({})
     if not any(reentrances.values()):
         return []
 
-    paths = find_all_structs(fs)
+    paths = [tuple(p) for p in get_all_paths(fs, only_leaves=False) if isinstance(p, list)]
     result = []
     temp = fs_copy(fs) 
     for f in fs.walk():
