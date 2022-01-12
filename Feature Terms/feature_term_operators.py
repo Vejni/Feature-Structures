@@ -1,4 +1,5 @@
 from nltk.featstruct import FeatStruct as FeatStruct
+from collections import defaultdict
 
 def init_FeatStruct(root, features=None, **morefeatures):
     """
@@ -72,12 +73,29 @@ def get_all_sort_generalizations(fs, sorts):
     for p in paths:
         sort = p[-1] if isinstance(p, tuple) else fs[tuple(p)].root
         if sort in sorts.keys():
-            temp = fs_copy(fs)
             if isinstance(p, tuple):
-                temp[p[:-1]] = sorts[p[-1]]
+                values = sorts[p[-1]]
+                if isinstance(values, list):
+                    for v in values:
+                        temp = fs_copy(fs)
+                        temp[p[:-1]] = v
+                        result.append(temp)
+                else:
+                    temp = fs_copy(fs)
+                    temp[p[:-1]] = values
+                    result.append(temp)
             else:
-                temp[tuple(p)].root = sorts[temp[tuple(p)].root]
-            result.append(temp)
+                values = sorts[fs[tuple(p)].root]
+                if isinstance(values, list):
+                    for v in values:
+                        temp = fs_copy(fs)
+                        temp[tuple(p)].root = v
+                        result.append(temp)
+                else:
+                    temp = fs_copy(fs)
+                    temp[tuple(p)].root = values
+                    result.append(temp)
+
     return result
 
 def get_all_variable_eliminations(fs, sorts):
@@ -153,6 +171,17 @@ def get_all_root_variable_equality_eliminations(fs, name="_copy"):
 def gen_step(fs, sorts):
     return get_all_sort_generalizations(fs, sorts) + get_all_variable_eliminations(fs, sorts) + get_all_variable_equality_eliminations(fs) +  get_all_root_variable_equality_eliminations(fs)
 
+def get_all_sort_specialisations(fs, sorts):
+    """
+    Generates all possible generalizations by replacing with sort supertypes.
+    """
+    # Reverse sorts
+    rev_sorts = defaultdict(list)
+    for key, value in sorts.items():
+        rev_sorts[value].append(key)
+
+    return get_all_sort_generalizations(fs, rev_sorts)
+
 if __name__ == "__main__":
     icon1 = init_FeatStruct(root = "icon", leftside = init_FeatStruct( root = "Silhouette", right = "Rightarrow"), rightside="Silhouette")
     icon2 = init_FeatStruct(root = "icon", rightside = init_FeatStruct( root = "Silhouette", left = "Leftarrow"), leftside="Silhouette")
@@ -165,15 +194,8 @@ if __name__ == "__main__":
     }
 
 
-    fs = get_all_sort_generalizations(icon1, sorts)
-    for f in fs:
-        print(get_all_variable_eliminations(f, sorts))
-    
-    f = init_FeatStruct(root="reentrant", feature="value")
-    fs = init_FeatStruct(root="root", left=f, middle=init_FeatStruct(root="asd", b=f), right=init_FeatStruct(root="mid", a=f))
-    print(fs)
+    print(icon1)
 
-    print(get_all_variable_equality_eliminations(fs))
-
-    for i in get_all_root_variable_equality_eliminations(fs):
-        print(i)
+    for f in get_all_sort_generalizations(icon1, sorts):
+        print(f)
+        print(get_all_sort_specialisations(f,  sorts))

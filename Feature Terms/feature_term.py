@@ -1,10 +1,14 @@
+import sys
+# setting path
+sys.path.append('../Amalgamation')
 from amalgam import Category
-import feature_term_gens as ftgens
 
+import feature_term_operators as ftgens
 
 class FeatureTerm(Category): 
-    def __init__(self, sorts):
+    def __init__(self, sorts, ontology):
         self.sorts = sorts
+        self.ontology = ontology
         super().__init__()
 
     def generalization_step(self, fs):
@@ -29,7 +33,9 @@ class FeatureTerm(Category):
         return all(root_sorts + leaf_sorts)
 
     def _subsumes(self, fs1, fs2):
-        if fs1.subsumes(fs2):
+        # default subsumes: Return True if self subsumes other. 
+        # I.e., return true If unifying self with other would result in a feature structure equal to other.
+        if fs2.subsumes(fs1) and self._root_check(fs1, fs2):
             return True
 
         # Initialise Queue
@@ -41,7 +47,7 @@ class FeatureTerm(Category):
 
             # Check if the generalisation subsumes the feature struct
             for g in sort_gens:
-                if g.subsumes(fs2) and self._root_check(g, fs2):
+                if fs2.subsumes(g) and self._root_check(g, fs2):
                     return True
                 
                 # if g not most general
@@ -51,6 +57,8 @@ class FeatureTerm(Category):
         return False
 
     def _antiunification(self, fs1, fs2):
+        # Do it like the pseudocode in paper
+
         # There should be a simpler way for this
         # Get all value paths (+ some extra)
         fs1_paths = ftgens.get_all_paths(fs1)
@@ -62,6 +70,10 @@ class FeatureTerm(Category):
             for p2 in fs2_paths:
                 if (p1 == p2) and (len(p1) > 1):
                     fs_paths.append(p1)
+
+        # Could try to add leftovers here
+
+        # Remove any duplicates
         fs_paths = set(fs_paths)
 
         # Create the antiunificated feature structure from common paths
@@ -70,22 +82,26 @@ class FeatureTerm(Category):
             fs[p[:-1]] = p[-1]
         return fs
 
+
 if __name__ == "__main__":
-    icon1 = ftgens.init_FeatStruct(root = "icon", leftside = ftgens.init_FeatStruct( root = "Silhouette", right = "Rightarrow"), rightside="Silhouette")
-    icon2 = ftgens.init_FeatStruct(root = "icon", rightside = ftgens.init_FeatStruct( root = "Silhouette", left = "Leftarrow"), leftside="Silhouette")
+    icon1 = ftgens.init_FeatStruct(root = "icon", leftside = ftgens.init_FeatStruct(root = "Silhouette", right = "Rightarrow"), rightside="Silhouette")
+    icon2 = ftgens.init_FeatStruct(root = "icon", rightside = ftgens.init_FeatStruct(root = "Silhouette", left = "Leftarrow"), leftside="Silhouette")
 
     sorts = {
         "Rightarrow": "Arrow",
         "Leftarrow": "Arrow",
         "Arrow": "Symbol",
-        "Silhouette": "asd",
-        "asd": "Symbol"
+        "Silhouette": "Symbol"
     }
 
-    fs1 =  ftgens.init_FeatStruct(root = "Silhouette", rightside="Silhouette")
-    fs2 =  ftgens.init_FeatStruct(root = "asd", rightside="Symbol", leftside="asdf")
-    print(fs1.subsumes(fs2))
+    ontology = {
+        ("icon", "leftside") : "Symbol",
+        ("icon", "rightside") : "Symbol",
+        ("Symbol", "leftside") : "Symbol",
+        ("Symbol", "rightside") : "Symbol"
+    }
 
-    
-    ft = FeatureTerm(sorts)
-    print(ft._subsumes(fs1, fs2))
+    fs1 =  ftgens.init_FeatStruct(root = "Silhouette", rightside="Symbol", leftside="asdf")
+    fs2 =  ftgens.init_FeatStruct(root = "Silhouette", rightside="Symbol", asd="asd")
+    fs = FeatureTerm(sorts, ontology)
+    print(fs._subsumes(fs1, fs2))
