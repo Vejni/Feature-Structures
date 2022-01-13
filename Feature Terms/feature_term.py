@@ -57,8 +57,6 @@ class FeatureTerm(Category):
         return False
 
     def _antiunification(self, fs1, fs2):
-        # Do it like the pseudocode in paper
-
         # There should be a simpler way for this
         # Get all value paths (+ some extra)
         fs1_paths = ftgens.get_all_paths(fs1)
