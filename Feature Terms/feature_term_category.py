@@ -13,16 +13,16 @@ class FeatureTermCategory(Category):
         return 
       
     def pullback(self, fs, fs_gen):
-        return self._antiunification(fs, fs_gen)
+        return fs.antiunify(fs_gen)
     
     def get_csp_gen(self, fs1, fs2):
-        return self._antiunification(fs1, fs2)
+        return fs1.antiunify(fs2)
 
     def amalgamate(self, fs1, fs2):
         return super().amalgamate(fs1, fs2)
 
     def _antiunification(self, fs1, fs2):
-        return
+        return fs1.antiunify(fs2)
 
 
 

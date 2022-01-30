@@ -17,7 +17,12 @@ def sort_leq(sorts, s1, s2):
     else:
         return False
 
-
+def find_most_common_sort(sorts, s1, s2):
+    """ Find most specific common sort of s1 and s2, returns bottom if no sort in common """
+    while s1 != s2:
+        s1 = sorts[s1]
+        s2 = sorts[s2]
+    return s1
 
 
 
@@ -33,6 +38,8 @@ class FeatureStructure:
         typing_func     {String: String}:           A dictionary of nodes as keys and sorts as values. 
         trans_func      {(String, String): String}: Transition function with keys as (f, q) where f is feature defined in feat, and q is a node. The values are nodes themselves.
         """
+        self.sorts = sorts
+        self.feat = feat
         self.nodes = nodes
         self.root = root
         self.typing_func = typing_func
@@ -51,7 +58,7 @@ class FeatureStructure:
             if not typing_func[q] in sorts.keys():
                 raise Exception("A node has invalid sort, please specify a valid feature structure.")
             # Test nodes
-            if q.startswith("_"):
+            if not isinstance(q, tuple) and q.startswith("_"):
                 raise Exception("Generated nodes will start with an underscore '_', avoid using them for node names.")
         
         for (f, q) in trans_func.keys():
@@ -66,6 +73,8 @@ class FeatureStructure:
                 raise Exception("A transition leads to a nonexisting node, please specify a valid feature structure.")       
     
     def subsumes(self, fs, sorts):
+        """ Checks feature structure subsumption in a BFS manner """
+
         if not isinstance(fs, FeatureStructure):
             raise Exception("Object not a feature structure.")
     
@@ -102,7 +111,37 @@ class FeatureStructure:
         return True
 
     def alphabetic_variant(self, fs, sorts):
+        """ Checks if two feature structures are alphabetic variants of each other """
         return self.subsumes(fs, sorts) and fs.subsumes(self, sorts)
+
+    def antiunify(self, fs):
+        """ Computes the antiunifier as the pair of common nodes """
+        root = (self.root, fs.root)
+        nodes = [root]
+        typing_func, trans_func = {}, {}
+        typing_func[root] = find_most_common_sort(self.sorts, self.typing_func[self.root], fs.typing_func[fs.root])
+
+        for q0 in nodes:
+            gen1 = [(f, q) for (f, q) in self.trans_func.keys() if q == q0[0]]
+            gen2 = [(f, q) for (f, q) in fs.trans_func.keys() if q == q0[1]]
+
+            flag = False
+            for (f1, q1) in gen1:
+                for (f2, q2) in gen2:
+                    if f1 == f2:
+                        flag = True
+                        node = (self.trans_func[(f1, q1)], fs.trans_func[(f2, q2)])
+                        nodes.append(node)
+                        typing_func[node] = find_most_common_sort(self.sorts, self.typing_func[self.trans_func[(f1, q1)]], fs.typing_func[fs.trans_func[(f2, q2)]])
+                        trans_func[(f1, q0)] = node
+                        break
+                if flag:
+                    flag = False
+                else:
+                    return False
+
+        return FeatureStructure(self.sorts, self.feat, nodes, root, typing_func, trans_func)
+
 
         
 
@@ -143,4 +182,4 @@ if __name__ == "__main__":
         "Q4": "Arrow"
     }
     fs2 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-    print(fs1.subsumes(fs2, sorts))
+    print(fs1.antiunify(fs2))

@@ -25,6 +25,21 @@ def test_sort_leq():
     assert fs.sort_leq(sorts, "Arrow", "Arrow")
     assert fs.sort_leq(sorts, "_", "_")
 
+def test_find_most_common_sort():
+    sorts = {
+        "Rightarrow": "Arrow",
+        "Leftarrow": "Arrow",
+        "Arrow": "Symbol",
+        "Silhouette": "Symbol",
+        "Symbol": "_",
+        "Icon": "_",
+        "_": "_"
+    }
+
+    assert fs.find_most_common_sort(sorts, "Rightarrow", "Leftarrow") == "Arrow"
+    assert fs.find_most_common_sort(sorts, "Arrow", "Silhouette") == "Symbol"
+    assert fs.find_most_common_sort(sorts, "Symbol", "Icon") == "_"
+
 def test_subsumes():
     # Own example
     sorts = {
@@ -173,3 +188,42 @@ def test_subsumes():
     assert not fs1.subsumes(fs2, sorts)
     assert not fs2.subsumes(fs1, sorts)
 
+def test_alphabetic_variant():
+    sorts = {"sign": "_", "agr": "_", "1st": "_"}
+    feat = ["SUBJ", "PERS", "PRED"]
+    nodes = ["Q1", "Q2", "Q3", "Q4", "Q5"]
+    root = "Q1"
+    typing_func = {"Q1": "sign", "Q2": "agr", "Q3": "agr", "Q4": "1st", "Q5": "1st"}
+    trans_func = {("SUBJ", "Q1"): "Q2", ("PRED", "Q1"): "Q3", ("PERS", "Q2"): "Q4", ("PERS", "Q3"): "Q5"}
+    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    sorts = {"sign": "_", "agr": "_", "1st": "_"}
+    feat = ["SUBJ", "PERS", "PRED"]
+    nodes = ["q1", "q2", "q3", "q4", "q5"]
+    root = "q1"
+    typing_func = {"q1": "sign", "q2": "agr", "q3": "agr", "q4": "1st", "q5": "1st"}
+    trans_func = {("SUBJ", "q1"): "q2", ("PRED", "q1"): "q3", ("PERS", "q2"): "q4", ("PERS", "q3"): "q5"}
+    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    assert fs1.alphabetic_variant(fs2, sorts)
+    assert fs2.alphabetic_variant(fs1, sorts)
+
+    # Carpenter 16
+    sorts = {"agr": "_", "sign": "_", "1st": "_"}
+    feat = ["AGR", "PERS"]
+    nodes = ["Q1", "Q2"]
+    typing_func = {"Q1": "agr", "Q2": "1st"}
+    trans_func = {("PERS", "Q1"): "Q2"}
+    root = "Q1"
+    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    nodes = ["Q1", "Q2", "Q3"]
+    root = "Q1"
+    typing_func = {"Q1": "sign", "Q2": "agr", "Q3": "1st"}
+    trans_func = {("AGR", "Q1"): "Q2", ("PERS", "Q2"): "Q3"}
+    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+    assert not fs1.alphabetic_variant(fs2, sorts)
+    assert not fs2.alphabetic_variant(fs1, sorts)   
+
+def test_antiunify():
+    assert False
