@@ -19,10 +19,15 @@ def sort_leq(sorts, s1, s2):
 
 def find_most_common_sort(sorts, s1, s2):
     """ Find most specific common sort of s1 and s2, returns bottom if no sort in common """
-    while s1 != s2:
-        s1 = sorts[s1]
-        s2 = sorts[s2]
-    return s1
+    if sort_leq(sorts, s1, s2):
+        return s1
+    elif sort_leq(sorts, s2, s1):
+        return s2
+    else:
+        while s1 != s2:
+            s1 = sorts[s1]
+            s2 = sorts[s2]
+        return s1
 
 
 
@@ -71,8 +76,42 @@ class FeatureStructure:
             # Test range of transition
             if not trans_func[(f, q)] in nodes:
                 raise Exception("A transition leads to a nonexisting node, please specify a valid feature structure.")       
-    
-    def subsumes(self, fs, sorts):
+
+    def __str__(self):
+        """ Define how to print feature structures to console """
+        feat = f"Feat:\n {' '.join(self.feat)}\n\n"
+
+        sorts = "Sort hierarchy: \n"
+        for (k, v) in self.sorts.items():
+            if k != "_":
+                sorts += f"{k} > {v} \n"
+        sorts += "\n"
+
+        root = f"Root: {self.root}\n\n"
+
+        types = "Types: \n"
+        for (k, v) in self.typing_func.items():
+            types += f"{k} : {v} \n"
+        types += "\n"
+
+        trans = "Transitions: \n"
+        for (k, v) in self.trans_func.items():
+            trans += f"{k[1]} --- {k[0]} ---> {v} \n"
+
+        return feat + sorts + root + types + trans
+
+    def __repr__(self):
+        """ Called from interactive prompt """
+        return self.__str__()
+
+    def __eq__(self, fs):
+        """ Overrides the default implementation of equality, used for testing only """
+        if not isinstance(fs, FeatureStructure):
+            return False
+        
+        return set(self.nodes) == set(fs.nodes) and self.root == fs.root and self.typing_func == fs.typing_func and self.trans_func == fs.trans_func
+
+    def subsumes(self, fs):
         """ Checks feature structure subsumption in a BFS manner """
 
         if not isinstance(fs, FeatureStructure):
@@ -85,7 +124,7 @@ class FeatureStructure:
             q1, *queue1 = queue1
             q2, *queue2 = queue2      
 
-            if not sort_leq(sorts, self.typing_func[q1], fs.typing_func[q2]):
+            if not sort_leq(self.sorts, self.typing_func[q1], fs.typing_func[q2]):
                 return False
 
             gen1 = [(f, q) for (f, q) in self.trans_func.keys() if q == q1]
@@ -96,7 +135,7 @@ class FeatureStructure:
                 for (f2, q2) in gen2:
                     if(
                         f1 == f2 and 
-                        sort_leq(sorts, self.typing_func[self.trans_func[(f1, q1)]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
+                        sort_leq(self.sorts, self.typing_func[self.trans_func[(f1, q1)]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
                         not (self.trans_func[(f1, q1)] == q1 and fs.trans_func[(f2, q2)] != q2)                  
                     ):
                         flag = True
@@ -110,9 +149,9 @@ class FeatureStructure:
                     return False
         return True
 
-    def alphabetic_variant(self, fs, sorts):
+    def alphabetic_variant(self, fs):
         """ Checks if two feature structures are alphabetic variants of each other """
-        return self.subsumes(fs, sorts) and fs.subsumes(self, sorts)
+        return self.subsumes(fs) and fs.subsumes(self)
 
     def antiunify(self, fs):
         """ Computes the antiunifier as the pair of common nodes """
@@ -121,24 +160,24 @@ class FeatureStructure:
         typing_func, trans_func = {}, {}
         typing_func[root] = find_most_common_sort(self.sorts, self.typing_func[self.root], fs.typing_func[fs.root])
 
+        flag = False
         for q0 in nodes:
             gen1 = [(f, q) for (f, q) in self.trans_func.keys() if q == q0[0]]
             gen2 = [(f, q) for (f, q) in fs.trans_func.keys() if q == q0[1]]
 
-            flag = False
             for (f1, q1) in gen1:
                 for (f2, q2) in gen2:
                     if f1 == f2:
-                        flag = True
                         node = (self.trans_func[(f1, q1)], fs.trans_func[(f2, q2)])
-                        nodes.append(node)
+                        if node not in nodes:
+                            nodes.append(node)
+                        else: 
+                            flag = True
                         typing_func[node] = find_most_common_sort(self.sorts, self.typing_func[self.trans_func[(f1, q1)]], fs.typing_func[fs.trans_func[(f2, q2)]])
                         trans_func[(f1, q0)] = node
                         break
                 if flag:
-                    flag = False
-                else:
-                    return False
+                    break
 
         return FeatureStructure(self.sorts, self.feat, nodes, root, typing_func, trans_func)
 
