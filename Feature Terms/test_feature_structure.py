@@ -396,7 +396,7 @@ def test_antiunify():
     f = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
     assert f.alphabetic_variant(fs1.antiunify(fs2))
 
-def test__sort_generalisation_operator():
+def test_sort_generalisation_operator():
     sorts = {
         "Rightarrow": "Arrow",
         "Leftarrow": "Arrow",
@@ -448,10 +448,10 @@ def test__sort_generalisation_operator():
     }
     fs4 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    gens = fs1._sort_generalisation_operator()
+    gens = fs1.sort_generalisation_operator()
     assert fs2 in gens and fs3 in gens and fs4 in gens
 
-def test__variable_elimination_operator():
+def test_variable_elimination_operator():
     sorts = {
         "Rightarrow": "Arrow",
         "Leftarrow": "Arrow",
@@ -490,9 +490,9 @@ def test__variable_elimination_operator():
     }
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    assert fs1._variable_elimination_operator()[0] == fs2
+    assert fs1.variable_elimination_operator()[0] == fs2
 
-def test__variable_equality_elimination_operator():
+def test_variable_equality_elimination_operator():
     sorts = {
         "Rightarrow": "Arrow",
         "Leftarrow": "Arrow",
@@ -535,7 +535,7 @@ def test__variable_equality_elimination_operator():
     }
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    gens = fs1._variable_equality_elimination_operator()
+    gens = fs1.variable_equality_elimination_operator()
     assert fs2.alphabetic_variant(gens[0]) and fs2.alphabetic_variant(gens[1])
 
     feat = ["leftside", "rightside", "left", "right", "mid"]
@@ -574,7 +574,7 @@ def test__variable_equality_elimination_operator():
     }
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    gens = fs1._variable_equality_elimination_operator()
+    gens = fs1.variable_equality_elimination_operator()
     assert fs2.alphabetic_variant(gens[2])
 
     nodes = ["Q1", "Q2", "Q3", "Q4", "Q5"]
@@ -594,6 +594,6 @@ def test__variable_equality_elimination_operator():
     }
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    gens = fs1._variable_equality_elimination_operator(looping=False)
+    gens = fs1.variable_equality_elimination_operator(looping=False)
     assert fs2.alphabetic_variant(gens[2])
 

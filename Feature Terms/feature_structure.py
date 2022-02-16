@@ -1,5 +1,6 @@
-
+import graphviz
 import copy
+import time
 
 
 def sort_leq(sorts, s1, s2):
@@ -33,6 +34,7 @@ def powerset(s):
     masks = [1 << i for i in range(x)]
     for i in range(1 << x):
         yield [ss for mask, ss in zip(masks, s) if i & mask]
+
 
 class FeatureStructure:
     def __init__(self, sorts, feat, nodes, root, typing_func, trans_func):
@@ -114,6 +116,24 @@ class FeatureStructure:
         
         return set(self.nodes) == set(fs.nodes) and self.root == fs.root and self.typing_func == fs.typing_func and self.trans_func == fs.trans_func
 
+    def plot(self, name="Feature Structure", folder = "Feature Terms/plots/", filename="fs.gv", view=False):
+        g = graphviz.Digraph(name)
+        g.attr(rankdir='LR', size='8,5')
+        g.attr('node', shape='circle')
+
+        for q in self.nodes:
+            g.node(f"{q} - {self.typing_func[q]}")
+            print(f"{q} - {self.typing_func[q]}")
+
+        for k in self.trans_func.keys():
+            g.edge(f"{k[1]} - {self.typing_func[k[1]]}",  f"{self.trans_func[k]} - {self.typing_func[self.trans_func[k]]}", label = k[0])
+            print(f"{k[1]} - {self.typing_func[k[1]]}",  f"{self.trans_func[k]}-  {self.typing_func[self.trans_func[k]]}", k[0])
+
+        if view:
+            g.view()
+            time.sleep(10)
+        g.render(folder + filename)
+
     def subsumes(self, fs):
         """ Checks feature structure subsumption in a BFS manner """
 
@@ -188,7 +208,7 @@ class FeatureStructure:
 
         return FeatureStructure(self.sorts, self.feat, nodes, root, typing_func, trans_func)
 
-    def _sort_generalisation_operator(self):
+    def sort_generalisation_operator(self):
         """ Generates all possible type generalised feature structures from self """
         res = []
         for q in self.nodes:
@@ -199,7 +219,7 @@ class FeatureStructure:
 
         return res
     
-    def _variable_elimination_operator(self):
+    def variable_elimination_operator(self):
         """ Generates alll possible generalisations via variable elimination from self """
 
         res = []
@@ -218,7 +238,7 @@ class FeatureStructure:
 
         return res
 
-    def _variable_equality_elimination_operator(self, looping = True):
+    def variable_equality_elimination_operator(self, looping = True):
         res = []
         qt = [q for q in self.nodes if list(self.trans_func.values()).count(q) > 1]
         if list(self.trans_func.values()).count(self.root):
@@ -278,13 +298,4 @@ if __name__ == "__main__":
         ("left", "Q3"): "Q4"         
     }
     fs1 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
-    
-    typing_func = {
-        "Q1": "Icon",
-        "Q2": "Symbol",
-        "Q3": "Silhouette",
-        "Q4": "_"
-    }
-    fs2 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-    print(fs2._variable_equality_elimination_operator())
+    fs1.plot()
