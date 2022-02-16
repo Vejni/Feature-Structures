@@ -1,0 +1,12 @@
+digraph "Feature Structure" {
+	rankdir=LR size="8,5"
+	node [shape=circle]
+	"Q1 - Icon"
+	"Q2 - Silhouette"
+	"Q3 - Silhouette"
+	"Q4 - Symbol"
+	"Q1 - Icon" -> "Q2 - Silhouette" [label=leftside]
+	"Q2 - Silhouette" -> "Q4 - Symbol" [label=right]
+	"Q1 - Icon" -> "Q3 - Silhouette" [label=rightside]
+	"Q3 - Silhouette" -> "Q4 - Symbol" [label=left]
+}

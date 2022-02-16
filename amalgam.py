@@ -13,11 +13,7 @@ class Category(object):
         """Method documentation"""
         return
     
-    def amalgamate(self, csp1, csp2, csp_gen=None):
-        # We can compute the generic space for feature terms
-        if False: # csp_gen = None
-            csp_gen = self.get_csp_gen(csp1, csp2)
-
+    def amalgamate(self, csp1, csp2, csp_gen, f1, f2):
         csp0_gen = self.generalization_step(csp_gen)
         csp1_gen = self.generalization_step(csp1)
         csp2_gen = self.generalization_step(csp2)

@@ -54,6 +54,8 @@ class FeatureStructure:
         self.root = root
         self.typing_func = typing_func
         self.trans_func = trans_func
+        self.id_f = dict(zip(feat, feat))
+        self.id_t = dict(zip(sorts.keys(), sorts.keys()))
 
         # Check invalid structures
         # Test root
@@ -123,23 +125,27 @@ class FeatureStructure:
 
         for q in self.nodes:
             g.node(f"{q} - {self.typing_func[q]}")
-            print(f"{q} - {self.typing_func[q]}")
 
         for k in self.trans_func.keys():
             g.edge(f"{k[1]} - {self.typing_func[k[1]]}",  f"{self.trans_func[k]} - {self.typing_func[self.trans_func[k]]}", label = k[0])
-            print(f"{k[1]} - {self.typing_func[k[1]]}",  f"{self.trans_func[k]}-  {self.typing_func[self.trans_func[k]]}", k[0])
 
         if view:
             g.view()
             time.sleep(10)
         g.render(folder + filename)
 
-    def subsumes(self, fs):
+    def subsumes(self, fs, morph_f = None, morph_t = None):
         """ Checks feature structure subsumption in a BFS manner """
 
         if not isinstance(fs, FeatureStructure):
             raise Exception("Object not a feature structure.")
+        
+        if morph_f is None:
+            morph_f = self.id_f
     
+        if morph_t is None:
+            morph_t = self.id_t
+
         queue1 = [self.root]
         visited1 = []
         queue2 = [fs.root]
@@ -149,7 +155,7 @@ class FeatureStructure:
             q1, *queue1 = queue1
             q2, *queue2 = queue2      
 
-            if not sort_leq(self.sorts, self.typing_func[q1], fs.typing_func[q2]):
+            if not sort_leq(fs.sorts, morph_t[self.typing_func[q1]], fs.typing_func[q2]):
                 return False
 
             gen1 = [(f, q) for (f, q) in self.trans_func.keys() if q == q1]
@@ -159,8 +165,8 @@ class FeatureStructure:
             for (f1, q1) in gen1:
                 for (f2, q2) in gen2:
                     if(
-                        f1 == f2 and 
-                        sort_leq(self.sorts, self.typing_func[self.trans_func[(f1, q1)]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
+                        morph_f[f1] == f2 and 
+                        sort_leq(fs.sorts, morph_t[self.typing_func[self.trans_func[(f1, q1)]]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
                         not (self.trans_func[(f1, q1)] == q1 and fs.trans_func[(f2, q2)] != q2)                  
                     ):
                         flag = True
@@ -176,16 +182,26 @@ class FeatureStructure:
                     return False
         return True
 
-    def alphabetic_variant(self, fs):
+    def alphabetic_variant(self, fs, morph_f = None, morph_t = None):
         """ Checks if two feature structures are alphabetic variants of each other """
-        return self.subsumes(fs) and fs.subsumes(self)
+        return self.subsumes(fs, morph_f, morph_t) and fs.subsumes(self, morph_f, morph_t)
 
-    def antiunify(self, fs):
+    def antiunify(self, fs, morph_f = None, morph_t = None):
         """ Computes the antiunifier as the pair of common nodes """
+
+        if not isinstance(fs, FeatureStructure):
+            raise Exception("Object not a feature structure.")
+        
+        if morph_f is None:
+            morph_f = self.id_f
+    
+        if morph_t is None:
+            morph_t = self.id_t
+
         root = (self.root, fs.root)
         nodes = [root]
         typing_func, trans_func = {}, {}
-        typing_func[root] = find_most_common_sort(self.sorts, self.typing_func[self.root], fs.typing_func[fs.root])
+        typing_func[root] = find_most_common_sort(self.sorts, morph_t[self.typing_func[self.root]], fs.typing_func[fs.root])
 
         flag = False
         for q0 in nodes:
@@ -194,13 +210,13 @@ class FeatureStructure:
 
             for (f1, q1) in gen1:
                 for (f2, q2) in gen2:
-                    if f1 == f2:
+                    if morph_f[f1] == f2:
                         node = (self.trans_func[(f1, q1)], fs.trans_func[(f2, q2)])
                         if node not in nodes:
                             nodes.append(node)
                         else: 
                             flag = True
-                        typing_func[node] = find_most_common_sort(self.sorts, self.typing_func[self.trans_func[(f1, q1)]], fs.typing_func[fs.trans_func[(f2, q2)]])
+                        typing_func[node] = find_most_common_sort(self.sorts, morph_t[self.typing_func[self.trans_func[(f1, q1)]]], fs.typing_func[fs.trans_func[(f2, q2)]])
                         trans_func[(f1, q0)] = node
                         break
                 if flag:
@@ -265,12 +281,7 @@ class FeatureStructure:
                 res.append(fs)
         return res
                 
-
-
-
-
-
-        
+ 
 
 if __name__ == "__main__":
     sorts = {

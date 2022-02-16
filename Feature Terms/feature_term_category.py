@@ -1,3 +1,4 @@
+from fileinput import filename
 import sys
 from feature_structure import FeatureStructure
 # setting path
@@ -11,7 +12,7 @@ class FeatureTermCategory(Category):
         super().__init__()
 
     def generalization_step(self, fs):
-        return fs.sort_generalisation_operator() + fs.variable_elimination_operator() + fs.variable_equality_elimination_operator() + fs.variable_equality_elimination_operator(looping = False)
+        return fs.sort_generalisation_operator() + fs.variable_elimination_operator() + fs.variable_equality_elimination_operator()
       
     def pullback(self, fs, fs_gen):
         return fs.antiunify(fs_gen)
@@ -55,5 +56,6 @@ if __name__ == "__main__":
     fs1 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
     
     ft = FeatureTermCategory(sorts, feat)
-    for f in ft.generalization_step(fs1):
-        print(f)
+
+    for i, f in enumerate(ft.generalization_step(fs1)):
+        f.plot(filename = f"fs{i}.gv")
