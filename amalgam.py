@@ -21,6 +21,8 @@ class Category(object):
         csp0_gen = self.generalization_step(csp_gen)
         csp1_gen = self.generalization_step(csp1)
         csp2_gen = self.generalization_step(csp2)
+
+        
         csp1_pull = self.pullback(csp1_gen, csp_gen)
         csp2_pull = self.pullback(csp2_gen, csp_gen)
 

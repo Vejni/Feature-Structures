@@ -395,3 +395,205 @@ def test_antiunify():
     }
     f = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
     assert f.alphabetic_variant(fs1.antiunify(fs2))
+
+def test__sort_generalisation_operator():
+    sorts = {
+        "Rightarrow": "Arrow",
+        "Leftarrow": "Arrow",
+        "Arrow": "Symbol",
+        "Silhouette": "Symbol",
+        "Symbol": "_",
+        "Icon": "_",
+        "_": "_"
+    }
+    feat = ["leftside", "rightside", "left", "right"]
+    nodes = ["Q1", "Q2", "Q3", "Q4"]
+    root = "Q1"
+    trans_func = {
+        ("leftside", "Q1"): "Q2",
+        ("right", "Q2"): "Q4",        
+        ("rightside", "Q1"): "Q3", 
+        ("left", "Q3"): "Q4"         
+    }
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "_"
+    }
+    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Symbol",
+        "Q3": "Silhouette",
+        "Q4": "_"
+    }
+    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Symbol",
+        "Q4": "_"
+    }
+    fs3 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    
+    typing_func = {
+        "Q1": "_",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "_"
+    }
+    fs4 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    gens = fs1._sort_generalisation_operator()
+    assert fs2 in gens and fs3 in gens and fs4 in gens
+
+def test__variable_elimination_operator():
+    sorts = {
+        "Rightarrow": "Arrow",
+        "Leftarrow": "Arrow",
+        "Arrow": "Symbol",
+        "Silhouette": "Symbol",
+        "Symbol": "_",
+        "Icon": "_",
+        "_": "_"
+    }
+    feat = ["leftside", "rightside", "left", "right"]
+    nodes = ["Q1", "Q2", "Q3", "Q4"]
+    root = "Q1"
+    trans_func = {
+        ("leftside", "Q1"): "Q2",
+        ("right", "Q2"): "Q4",        
+        ("rightside", "Q1"): "Q3", 
+        ("left", "Q3"): "Q4"         
+    }
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "_"
+    }
+    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    nodes = ["Q1", "Q2", "Q3"]
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette"
+    }
+    trans_func = {
+        ("leftside", "Q1"): "Q2",      
+        ("rightside", "Q1"): "Q3"       
+    }
+    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    assert fs1._variable_elimination_operator()[0] == fs2
+
+def test__variable_equality_elimination_operator():
+    sorts = {
+        "Rightarrow": "Arrow",
+        "Leftarrow": "Arrow",
+        "Arrow": "Symbol",
+        "Silhouette": "Symbol",
+        "Symbol": "_",
+        "Icon": "_",
+        "_": "_"
+    }
+    feat = ["leftside", "rightside", "left", "right"]
+    nodes = ["Q1", "Q2", "Q3", "Q4"]
+    root = "Q1"
+    trans_func = {
+        ("leftside", "Q1"): "Q2",
+        ("right", "Q2"): "Q4",        
+        ("rightside", "Q1"): "Q3", 
+        ("left", "Q3"): "Q4"         
+    }
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "_"
+    }
+    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    nodes = ["Q1", "Q2", "Q3", "Q4", "Q5"]
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "_",
+        "Q5": "_"
+    }
+    trans_func = {
+        ("leftside", "Q1"): "Q2",    
+        ("right", "Q2"): "Q4",    
+        ("rightside", "Q1"): "Q3",    
+        ("left", "Q3"): "Q5"     
+    }
+    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    gens = fs1._variable_equality_elimination_operator()
+    assert fs2.alphabetic_variant(gens[0]) and fs2.alphabetic_variant(gens[1])
+
+    feat = ["leftside", "rightside", "left", "right", "mid"]
+    nodes = ["Q1", "Q2", "Q3", "Q4"]
+    trans_func = {
+        ("leftside", "Q1"): "Q2",
+        ("right", "Q2"): "Q4",        
+        ("rightside", "Q1"): "Q3", 
+        ("left", "Q3"): "Q4",
+        ("mid", "Q4"): "Q1"        
+    }
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "_"
+    }
+    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    nodes = ["Q1", "Q2", "Q3", "Q4", "Q5"]
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "_",
+        "Q5": "Icon"
+    }
+    trans_func = {
+        ("leftside", "Q1"): "Q2",    
+        ("right", "Q2"): "Q4",    
+        ("rightside", "Q1"): "Q3",    
+        ("left", "Q3"): "Q4",
+        ("mid", "Q4"): "Q5",
+        ("leftside", "Q5"): "Q2",   
+        ("rightside", "Q5"): "Q3"
+    }
+    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    gens = fs1._variable_equality_elimination_operator()
+    assert fs2.alphabetic_variant(gens[2])
+
+    nodes = ["Q1", "Q2", "Q3", "Q4", "Q5"]
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "_",
+        "Q5": "Icon"
+    }
+    trans_func = {
+        ("leftside", "Q1"): "Q2",    
+        ("right", "Q2"): "Q4",    
+        ("rightside", "Q1"): "Q3",    
+        ("left", "Q3"): "Q4",
+        ("mid", "Q4"): "Q5"
+    }
+    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    gens = fs1._variable_equality_elimination_operator(looping=False)
+    assert fs2.alphabetic_variant(gens[2])
+
