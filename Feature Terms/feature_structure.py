@@ -1,6 +1,6 @@
-
-import queue
-from pyparsing import empty
+import graphviz
+import copy
+import time
 
 
 def sort_leq(sorts, s1, s2):
@@ -29,6 +29,11 @@ def find_most_common_sort(sorts, s1, s2):
             s2 = sorts[s2]
         return s1
 
+def powerset(s):
+    x = len(s)
+    masks = [1 << i for i in range(x)]
+    for i in range(1 << x):
+        yield [ss for mask, ss in zip(masks, s) if i & mask]
 
 
 class FeatureStructure:
@@ -111,6 +116,24 @@ class FeatureStructure:
         
         return set(self.nodes) == set(fs.nodes) and self.root == fs.root and self.typing_func == fs.typing_func and self.trans_func == fs.trans_func
 
+    def plot(self, name="Feature Structure", folder = "Feature Terms/plots/", filename="fs.gv", view=False):
+        g = graphviz.Digraph(name)
+        g.attr(rankdir='LR', size='8,5')
+        g.attr('node', shape='circle')
+
+        for q in self.nodes:
+            g.node(f"{q} - {self.typing_func[q]}")
+            print(f"{q} - {self.typing_func[q]}")
+
+        for k in self.trans_func.keys():
+            g.edge(f"{k[1]} - {self.typing_func[k[1]]}",  f"{self.trans_func[k]} - {self.typing_func[self.trans_func[k]]}", label = k[0])
+            print(f"{k[1]} - {self.typing_func[k[1]]}",  f"{self.trans_func[k]}-  {self.typing_func[self.trans_func[k]]}", k[0])
+
+        if view:
+            g.view()
+            time.sleep(10)
+        g.render(folder + filename)
+
     def subsumes(self, fs):
         """ Checks feature structure subsumption in a BFS manner """
 
@@ -118,7 +141,9 @@ class FeatureStructure:
             raise Exception("Object not a feature structure.")
     
         queue1 = [self.root]
+        visited1 = []
         queue2 = [fs.root]
+        visited2 = []
 
         while len(queue1):
             q1, *queue1 = queue1
@@ -139,9 +164,11 @@ class FeatureStructure:
                         not (self.trans_func[(f1, q1)] == q1 and fs.trans_func[(f2, q2)] != q2)                  
                     ):
                         flag = True
-                        if self.trans_func[(f1, q1)] != q1:
+                        if self.trans_func[(f1, q1)] not in visited1 and fs.trans_func[(f2, q2)] not in visited2:
                             queue1.append(self.trans_func[(f1, q1)])
+                            visited1.append(q1)
                             queue2.append(fs.trans_func[(f2, q2)])
+                            visited2.append(q2)
                         break
                 if flag and not (len(set(queue1)) != len(queue1) and len(set(queue2)) == len(queue2)):
                     flag = False
@@ -181,8 +208,67 @@ class FeatureStructure:
 
         return FeatureStructure(self.sorts, self.feat, nodes, root, typing_func, trans_func)
 
+    def sort_generalisation_operator(self):
+        """ Generates all possible type generalised feature structures from self """
+        res = []
+        for q in self.nodes:
+            if self.typing_func[q] in self.sorts and self.typing_func[q] != "_":
+                fs = copy.deepcopy(self)
+                fs.typing_func[q] = self.sorts[self.typing_func[q]]
+                res.append(fs)
 
-        
+        return res
+    
+    def variable_elimination_operator(self):
+        """ Generates alll possible generalisations via variable elimination from self """
+
+        res = []
+        for q in self.nodes:
+            if self.typing_func[q] == "_" and q not in [t[1] for t in self.trans_func.keys()]:
+                fs = copy.deepcopy(self)
+                fs.nodes.remove(q)
+
+                del fs.typing_func[q]
+
+                for k in list(fs.trans_func.keys()):
+                    if fs.trans_func[k] == q:
+                        del fs.trans_func[k]
+
+                res.append(fs)
+
+        return res
+
+    def variable_equality_elimination_operator(self, looping = True):
+        res = []
+        qt = [q for q in self.nodes if list(self.trans_func.values()).count(q) > 1]
+        if list(self.trans_func.values()).count(self.root):
+            qt.append(self.root)
+
+        for q in qt:
+            gt = [k for k in self.trans_func.keys() if self.trans_func[k] == q]
+            for gti in powerset(gt):
+                if not gti or (gti == gt and len(gti) > 1):
+                    continue
+
+                fs = copy.deepcopy(self)
+                node = (" ".join([i[1] for i in gti]), q)
+                fs.nodes.append(node)
+                fs.typing_func[node] = self.typing_func[q]
+
+                for k in gti:
+                    fs.trans_func[k] = node
+                
+                if looping:
+                    for k in [k for k in self.trans_func.keys() if k[1] == q]:
+                        fs.trans_func[(k[0], node)] = self.trans_func[k]
+
+                res.append(fs)
+        return res
+                
+
+
+
+
 
         
 
@@ -212,13 +298,4 @@ if __name__ == "__main__":
         ("left", "Q3"): "Q4"         
     }
     fs1 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
-    
-    typing_func = {
-        "Q1": "Icon",
-        "Q2": "Symbol",
-        "Q3": "Silhouette",
-        "Q4": "Arrow"
-    }
-    fs2 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-    print(fs1.antiunify(fs2))
+    fs1.plot()
