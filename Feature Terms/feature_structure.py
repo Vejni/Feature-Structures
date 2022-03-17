@@ -1,8 +1,14 @@
 import graphviz
 import copy
-import time
+import os, errno
 
-
+def silentremove(filename):
+    try:
+        os.remove(filename)
+    except OSError as e: # this would be "except OSError, e:" before Python 2.6
+        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+            raise # re-raise exception if a different error occurred
+    
 def sort_leq(sorts, s1, s2):
     """ Checks if s1 <= s2 in the sort hierarchy, that is if s2 is more specific than s1. """
     if s1 not in sorts.keys() or s2 not in sorts.keys():
@@ -131,8 +137,9 @@ class FeatureStructure:
 
         if view:
             g.view()
-            time.sleep(10)
+
         g.render(folder + filename)
+        silentremove(folder + filename)
 
     def subsumes(self, fs, morph_f = None, morph_t = None):
         """ Checks feature structure subsumption in a BFS manner """
@@ -224,6 +231,70 @@ class FeatureStructure:
 
         return FeatureStructure(self.sorts, self.feat, nodes, root, typing_func, trans_func)
 
+    def disjoint_unify(self, fs1, fs2, morph_f1 = None, morph_t1 = None, morph_f2 = None, morph_t2 = None):
+        """ Computes the disjoint union of fs1 and fs2 with objects identified by self """
+        if (not isinstance(fs1, FeatureStructure)) or (not isinstance(fs2, FeatureStructure)):
+            raise Exception("Object not a feature structure.")
+
+        if morph_f1 is None:
+            morph_f1 = self.id_f
+        if morph_t1 is None:
+            morph_t1 = self.id_t
+        if morph_f2 is None:                                                                                                                                                                                                                                                 
+            morph_f2 = self.id_f
+        if morph_t2 is None:
+            morph_t2 = self.id_t
+
+        root = (self.root, fs1.root, fs2.root)
+        nodes = [root]
+        typing_func, trans_func = {}, {}
+        typing_func[root] = self.typing_func[self.root]
+        feat = []
+        sorts = self.sorts
+
+        flag = False
+        for q00 in nodes:
+            gen1 = [(f, q) for (f, q) in fs1.trans_func.keys() if q == q00[1]]
+            gen2 = [(f, q) for (f, q) in fs2.trans_func.keys() if q == q00[2]]
+
+            if q00[0] is not None:
+                gen0 = [(f, q) for (f, q) in self.trans_func.keys() if q == q00[0]]
+
+                for (f0, q0) in gen0:
+                    for (f1, q1) in gen1:
+                        for (f2, q2) in gen2:
+                            node = (self.trans_func[(f0, q0)], fs1.trans_func[(f1, q1)], fs2.trans_func[(f2, q2)])
+                            if (morph_f1[f0] == f1 and morph_f2[f0] == f2) and (morph_t1[self.typing_func[node[0]]] == fs1.typing_func[node[1]] and morph_t2[self.typing_func[node[0]]] == fs2.typing_func[node[2]]):
+                                if node not in nodes:
+                                    nodes.append(node)
+                                else: 
+                                    flag = True
+                                typing_func[node] = self.typing_func[node[0]]
+                                trans_func[(f0, q00)] = node
+                                feat.append(f0)
+                                break
+                        if flag:
+                            break
+
+            for (f1, q1) in gen1:  
+                if not any([fs1.trans_func[(f1, q1)] == q[1] == q[2] for q in nodes]):
+                    node = (None, fs1.trans_func[(f1, q1)], None)
+                    typing_func[node] = f"1.{fs1.typing_func[node[1]]}"
+                    sorts[f"1.{fs1.typing_func[node[1]]}"] = sorts[fs1.typing_func[node[1]]]
+                    trans_func[(f"1.{f1}", q00)] = node
+                    feat.append(f"1.{f1}")
+                    nodes.append(node)
+            for (f2, q2) in gen2:  
+                if not any([fs2.trans_func[(f2, q2)] == q[1] == q[2] for q in nodes]):
+                    node = (None, None, fs2.trans_func[(f2, q2)])
+                    typing_func[node] = f"2.{fs2.typing_func[node[2]]}"
+                    sorts[f"2.{fs2.typing_func[node[2]]}"] = sorts[fs2.typing_func[node[2]]]
+                    trans_func[(f"2.{f2}", q00)] = node
+                    feat.append(f"2.{f2}")
+                    nodes.append(node)
+                    
+        return FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
     def sort_generalisation_operator(self):
         """ Generates all possible type generalised feature structures from self """
         res = []
@@ -294,6 +365,19 @@ if __name__ == "__main__":
         "_": "_"
     }
     feat = ["leftside", "rightside", "left", "right"]
+    nodes = ["Q1", "Q2",  "Q4"]
+    root = "Q1"
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q4": "Arrow"
+    }
+    trans_func = {
+        ("leftside", "Q1"): "Q2",
+        ("right", "Q2"): "Q4"      
+    }
+    fs1 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
     nodes = ["Q1", "Q2", "Q3", "Q4"]
     root = "Q1"
     typing_func = {
@@ -302,11 +386,21 @@ if __name__ == "__main__":
         "Q3": "Silhouette",
         "Q4": "Arrow"
     }
-    trans_func = {
+    trans_func = {    
         ("leftside", "Q1"): "Q2",
-        ("right", "Q2"): "Q4",        
         ("rightside", "Q1"): "Q3", 
         ("left", "Q3"): "Q4"         
     }
-    fs1 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-    fs1.plot()
+    fs2 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    nodes = ["Q1", "Q2"]
+    root = "Q1"
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette"
+    }
+    trans_func = {("leftside", "Q1"): "Q2"}
+    fs0 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+
+    print(fs0.disjoint_unify(fs1, fs2))

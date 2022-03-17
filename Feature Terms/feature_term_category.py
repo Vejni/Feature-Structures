@@ -17,14 +17,42 @@ class FeatureTermCategory(Category):
     def pullback(self, fs, fs_gen):
         return fs.antiunify(fs_gen)
     
+    def pushout(self, fs1, fs2, fs_gen, f1, f2):
+        if f1 is not None and f2 is not None:
+            return fs_gen.disjoint_unify(fs1, fs2, f1[0], f1[1], f2[0], f2[1])
+        else:
+            return fs_gen.disjoint_unify(fs1, fs2)
+    
     def get_csp_gen(self, fs1, fs2):
         return fs1.antiunify(fs2)
 
-    def amalgamate(self, fs1, fs2):
-        return super().amalgamate(fs1, fs2)
+    def reduce(self, amalgams):
+        results = []
+        for fs in amalgams:
+            flag = True
+            for res in results:
+                if fs.alphabetic_variant(res) and fs != res:
+                    flag = False
+                    break
+            if flag:
+                results.append(fs)
+        return results
 
-    def _antiunification(self, fs1, fs2):
-        return fs1.antiunify(fs2)
+    def reduce_minimal(self, amalgams):
+        results = []
+        for fs in amalgams:
+            flag = True
+            for res in results:
+                if fs.subsumes(res) and fs != res:
+                    flag = False
+                    break
+            if flag:
+                results.append(fs)
+        return results
+
+    def amalgamate(self, fs1, fs2, fs_gen, f1=None, f2=None):
+        return super().amalgamate(fs1, fs2, fs_gen, f1, f2)
+
 
 
 
@@ -45,7 +73,7 @@ if __name__ == "__main__":
         "Q1": "Icon",
         "Q2": "Silhouette",
         "Q3": "Silhouette",
-        "Q4": "Arrow"
+        "Q4": "Rightarrow"
     }
     trans_func = {
         ("leftside", "Q1"): "Q2",
@@ -55,7 +83,24 @@ if __name__ == "__main__":
     }
     fs1 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
     
-    ft = FeatureTermCategory(sorts, feat)
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "Leftarrow"
+    }
+    fs2 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    for i, f in enumerate(ft.generalization_step(fs1)):
-        f.plot(filename = f"fs{i}.gv")
+    print(fs1.antiunify(fs2))
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "Arrow"
+    }
+    fs0 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+    
+    ft = FeatureTermCategory(sorts, feat)
+    ft.amalgamate(fs1, fs2, fs0)
+    #for i, f in enumerate(ft.generalization_step(fs1)):
+    #    f.plot(filename = f"fs{i}.gv")
