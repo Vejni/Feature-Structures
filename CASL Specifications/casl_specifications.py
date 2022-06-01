@@ -76,10 +76,10 @@ class CASLSpecification:
     def __str__(self):
         """ Define how to print feature structures to console """
         name = f"spec: {self.name}" + "\n\n"
-        sorts = f"sorts: \n {' '.join(self.sorts)}" + "\n\n"
-        ops = "ops: \n" + '\n'.join(self.ops) + "\n\n"
-        preds = "preds: \n" + '\n'.join(self.preds) + "\n\n"
-        axioms = "axioms: \n" + '\n'.join(self.axioms) + "\n\n"
+        sorts = f"sorts: {' '.join(self.sorts)}" + "\n\n"
+        ops = "ops: \n\t" + '\n\t'.join(self.ops) + "\n\n"
+        preds = "preds: \n\t" + '\n\t'.join(self.preds) + "\n\n"
+        axioms = "axioms: \n\t" + '\n\t'.join(self.axioms) + "\n\n"
 
         return name + sorts + ops + preds + axioms
 
@@ -97,6 +97,10 @@ class CASLSpecification:
         with open(path) as fin:
             text = fin.read()
         self.parse_text(text)
+
+    def write_to_file(self, path):
+        with open(path, "w") as fin:
+            fin.write(self.__str__())       
 
     def axiom_elimination_operator(self):
         res = []
@@ -145,4 +149,5 @@ if __name__ == "__main__":
 
     source = CASLSpecification()
     source.read_from_file("CASL Specifications\specs\spec.txt")
-    print(source)
+    for i, spec in enumerate(source.axiom_elimination_operator()):
+        spec.write_to_file(f"CASL Specifications\specs\spec_out_{i}.txt")
