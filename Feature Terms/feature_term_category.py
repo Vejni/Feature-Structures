@@ -42,8 +42,8 @@ class FeatureTermCategory(Category):
         results = []
         for fs in amalgams:
             flag = True
-            for res in results:
-                if fs.subsumes(res) and fs != res:
+            for res in amalgams:
+                if (fs.subsumes(res) and fs != res) or (fs in results):
                     flag = False
                     break
             if flag:

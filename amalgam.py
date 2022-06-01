@@ -1,7 +1,5 @@
 import abc
 
-from graphviz import view
-
 class Category(object):
     __metaclass__ = abc.ABCMeta
     
@@ -37,9 +35,8 @@ class Category(object):
                     amalgam = self.pushout(csp1_gen, csp2_gen, csp_pull, f, g)
                     results.append(amalgam)
 
-        results = self.reduce(results)
+        results = self.reduce_minimal(results)
         for i, amalgam in enumerate(results):
-            print(amalgam)
             amalgam.plot(filename = f"fs{i}.gv")
         return results
 

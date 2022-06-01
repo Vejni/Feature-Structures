@@ -1,0 +1,49 @@
+spec SOURCE_PATH_GOAL =
+
+sorts 
+	SPGschema, Path, Location, Trajector
+     
+ops
+	source, goal: SPGschema -> Location
+    path: SPGschema -> Path
+    trajector: SPGschema -> Trajector
+
+preds 
+	placed : Trajector * Location
+    inPath : Location * Path 
+    isFollowedBy: Location * Location * Path 
+    __contiguous__: Location * Location
+
+%axioms%
+    forall p : Path
+    	%( paths are always part of a unique path schema )%
+    	. exists! s:SPGschema . path(s) = p
+
+    forall s: SPGschema
+    	%( source and goal locations are in the path, and they are distinct )%
+    	. inPath(source(s),path(s))
+    	. inPath(goal(s),path(s))
+    	. not source(s) = goal(s) 
+    	%( trajectors are on a unique location in the path )%
+    	. exists! l:Location . inPath(l,path(s)) /\ placed(trajector(s),l) 
+
+
+    forall k,l: Location; p: Path
+    	%( 'contiguous' is the symmetric closure of the following relation )%
+    	. k contiguous l <=> isFollowedBy(k,l,p) \/ isFollowedBy(l,k,p)
+
+	forall s: SPGschema; l: Location
+    	. not (isFollowedBy(l,source(s),path(s)) \/ isFollowedBy(goal(s),l,path(s)))
+    	%( no location is followed by the source or follows the goal )%
+    	. inPath(l,path(s)) /\ (not l = source(s) ) 
+    		=> exists! k: Location . inPath(k,path(s)) /\ isFollowedBy(k,l,path(s))
+    	%( any location on the path, except the source, follows exactly one location on the same path )%
+    	. inPath(l,path(s)) /\ (not l = goal(s) ) 
+    		=> exists! m:Location . inPath(m,path(s)) /\ isFollowedBy(l,m,path(s))
+    	%( any location on the path, except the goal, is followed by exactly one location on the same path )%
+
+	forall k, l: Location; p: Path
+		.isFollowedBy(k,l,p) \/ isFollowedBy(l,k,p) => inPath(k,p) /\ inPath(l,p)
+		%( any two contiguous locations form a path that contains them )%
+
+end
