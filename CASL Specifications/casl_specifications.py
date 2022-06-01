@@ -45,8 +45,9 @@ class CASLSpecification:
                     preds_split = pred.split(",")
                     signature = preds_split[-1].split(":")[1]
                     for p in preds_split[:-1]:
-                        p += signature
+                        p += ":" + signature
                         self.preds.append(p)
+                    self.preds.append(preds_split[-1])
                 else:
                     self.preds.append(pred)            
 
