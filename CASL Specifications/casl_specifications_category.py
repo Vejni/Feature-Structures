@@ -28,6 +28,9 @@ class CASLSpecificationCategory(Category):
     def reduce_minimal(self):
         return
 
+    def rename(self):
+        return
+
     def amalgamate(self, s1, s2, s_gen):
         return super().amalgamate(s1, s2, s_gen)
 

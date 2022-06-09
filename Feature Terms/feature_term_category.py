@@ -11,20 +11,23 @@ class FeatureTermCategory(Category):
         self.feat = feat
         super().__init__()
 
-    def generalization_step(self, fs):
+    def generalisation_step(self, fs):
         return fs.sort_generalisation_operator() + fs.variable_elimination_operator() + fs.variable_equality_elimination_operator()
       
     def pullback(self, fs, fs_gen):
         return fs.antiunify(fs_gen)
     
-    def pushout(self, fs1, fs2, fs_gen, f1, f2):
-        if f1 is not None and f2 is not None:
-            return fs_gen.disjoint_unify(fs1, fs2, f1[0], f1[1], f2[0], f2[1])
-        else:
-            return fs_gen.disjoint_unify(fs1, fs2)
+    def pushout(self, fs1, fs2, fs_gen):
+        return fs_gen.disjoint_unify(fs1, fs2)
     
     def get_csp_gen(self, fs1, fs2):
         return fs1.antiunify(fs2)
+
+    def is_mono(self, fs1, fs2):
+        return fs1.subsumes(fs2) or fs2.subsumes(fs1)
+    
+    def is_epic(self, fs1, fs2):
+        return fs1.subsumes(fs2) or fs2.subsumes(fs1)
 
     def reduce(self, amalgams):
         results = []
@@ -49,6 +52,39 @@ class FeatureTermCategory(Category):
             if flag:
                 results.append(fs)
         return results
+
+    def rename(self, fs, f):
+        if f is None:
+            return
+
+        sort_renamings = f[0]
+        sorts = fs.sorts
+        fs.sorts = {}
+        for k, v in sorts:
+            if k in sort_renamings.keys():
+                k = sort_renamings[k]
+            if v in sort_renamings.keys():
+                v = sort_renamings[v]
+            fs.sorts[k] = v    
+
+        for k, v in self.typing_func:
+            if v in sort_renamings.keys():
+                self.typing_func[k] = sort_renamings[v]
+
+        feature_renamings = f[1]
+        transitions = fs.trans_func
+        fs.trans_func = {}
+        for k, v in transitions:
+            if k[0] in feature_renamings.keys():
+                k[0] = feature_renamings[k[0]]
+            fs.trans_func[k] = v  
+
+        feat = fs.feat
+        fs.feat = []
+        for fe in feat:
+            if fe in feature_renamings.keys():
+                fe = feature_renamings[fe]
+            fs.feat.append(fe)
 
     def amalgamate(self, fs1, fs2, fs_gen, f1=None, f2=None):
         return super().amalgamate(fs1, fs2, fs_gen, f1, f2)
