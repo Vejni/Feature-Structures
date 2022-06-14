@@ -3,7 +3,7 @@ import sys
 from casl_specifications import CASLSpecification
 # setting path
 sys.path.append('../Amalgamation')
-from amalgam import Category
+from amalgam import Category, Span
 
 
 class CASLSpecificationCategory(Category): 
@@ -11,16 +11,16 @@ class CASLSpecificationCategory(Category):
         super().__init__()
 
     def generalization_step(self):
-        return 
+        return self.axiom_elimination_operator()
       
-    def pullback(self):
-        return 
+    def pullback(self, spec):
+        return self.intersect(spec)
     
-    def pushout(self):
-        return 
+    def pushout(self, spec):
+        return self.disjoint_union(spec)
     
-    def get_csp_gen(self):
-        return
+    def get_csp_gen(self, spec):
+        return self.intersect(spec)
 
     def reduce(self):
         return

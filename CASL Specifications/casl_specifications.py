@@ -8,6 +8,136 @@ class CASLSpecification:
         self.preds = []
         self.axioms = []
 
+    def _parse_sorts(self, text):
+        a = text.find('sorts')
+        if a == -1:
+            a = text.find('sort')
+            if a == -1:
+                return
+
+        endings = ["ops", "preds", "%axioms%", "view"]
+        i = 0
+        while (((b := text.find(endings[i])) == -1) or (a > b)) and (i < len(endings)):
+            i += 1
+
+        if b == -1:
+            return
+
+        self.sorts = re.sub(re.compile(r'\s+'), '',  text[a+5:b]).split(",")
+
+    def _parse_ops(self, text):
+        a = text.find('ops')
+        if a == -1:
+            a = text.find('op')
+            if a == -1:
+                return
+
+        endings = ["preds", "%axioms%", "view"]
+        i = 0
+        while (((b := text.find(endings[i])) == -1) or (a > b)) and (i < len(endings)):
+            i += 1
+        
+        if b == -1:
+            return
+
+        ops = text[a+3:b].strip().replace(" ", "").split("\n")
+        for op in ops:
+            op = op.strip()
+            if op:
+                if "," in op:
+                    ops_split = op.split(",")
+                    signature = ops_split[-1].split(":")[1]
+                    for o in ops_split[:-1]:
+                        o += ":" + signature
+                        self.ops.append(o.strip())
+                    self.ops.append(ops_split[-1].strip())
+                else:
+                    self.ops.append(op.strip())
+
+    def _parse_preds(self, text):
+        a = text.find('preds')
+        if a == -1:
+            a = text.find('pred')
+            if a == -1:
+                return
+
+        endings = ["%axioms%", "ops", "view"]
+        i = 0
+        while (((b := text.find(endings[i])) == -1) or (a > b)) and (i < len(endings)):
+            i += 1
+
+        if b == -1:
+            return
+
+        preds = text[a+5:b].strip().replace(" ", "").split("\n")
+        for pred in preds:
+            pred = pred.strip()
+            if pred:
+                if "," in pred:
+                    preds_split = pred.split(",")
+                    signature = preds_split[-1].split(":")[1]
+                    for p in preds_split[:-1]:
+                        p += ":" + signature
+                        self.preds.append(p.strip())
+                    self.preds.append(preds_split[-1].strip())
+                else:
+                    self.preds.append(pred.strip()) 
+
+    def _parse_axioms(self, text):
+        a, b = text.find('%axioms%'), text.find("end")
+        if a == -1:
+            return
+    
+        # if same quantifier used many times, place it everywhere
+        axioms_text =  text[a+8:b]
+        flag = False
+        for line in axioms_text.split("\n"):
+            line_str = line.strip()
+            if line_str:
+                if line_str.startswith("forall"):   
+                    line_str = line_str.replace(";", " .forall ")
+                    quantifier = line_str
+                    flag = True
+                elif line_str.startswith("exists!"):
+                    line_str = line_str.replace(";", " .exists! ")
+                    quantifier = line_str
+                    flag = True
+                elif line_str.startswith("exists"):
+                    line_str = line_str.replace(";", " .exists ")
+                    quantifier = line_str
+                    flag = True
+                else:
+                    if line_str:
+                        if flag:
+                            self.axioms.append(quantifier + " " + line_str)
+                        else:
+                            self.axioms += [("." + ax).strip()  for ax in line_str.split(".")[1:]]
+                    else:
+                        flag = False
+
+        print(self.axioms) 
+
+    def _parse_views(self, text):
+        indices = [s.start() for s in re.finditer("view", text)]
+        if not len(indices):
+            return
+
+        domain = text[indices[0]:indices[1]].split("\n")[0].split("to ")[1].replace("=", "").strip()
+        renamings_text = [r.strip() for r in text[indices[0]:indices[1]].split("=")[1].split(",")]
+        renamings = {}
+        for r in renamings_text:
+            v, k = r.split("|->")
+            renamings[k.strip()] = v.strip()
+        self.f1 = {"domain": domain, "renamings": renamings}
+
+        domain = text[indices[1]:].split("\n")[0].split("to ")[1]
+        renamings_text = [r.strip() for r in text[indices[1]:].split("=")[1].split(",")]
+        renamings = {}
+        for r in renamings_text:
+            v, k = r.split("|->")
+            renamings[k.strip()] = v.strip()
+        self.f2 = {"domain": domain, "renamings": renamings}       
+                
     def parse_text(self, text):
         """
         Parses casl code 
@@ -16,80 +146,31 @@ class CASLSpecification:
         # Get name of specification
         self.name = re.findall(r"(?:spec ).+\b" , text)[0].replace("spec ", "")
 
+        # Some general formatting
+        text = text.replace(",\n", ",")
+        text = re.sub(',[ \t]\n', ',', text)
+        text = re.sub('%\([^()]*\)%', '', text)
+
         # Get Sorts
-        a, b = text.find('sorts'), text.find('ops')
-        if a != -1:
-            if b == -1:
-                b = text.find('preds')
-            self.sorts = re.sub(re.compile(r'\s+'), '',  text[a+5:b]).split(",")
+        self._parse_sorts(text)
 
         # Get operations
-        a, b = text.find('ops'), text.find('preds')
-        self.ops = []
-        if a != -1:
-            if b == -1:
-                b = text.find('%axioms%')
-            ops = text[a+3:b].strip().replace(" ", "").split("\n")
-            for op in ops:
-                if "," in op:
-                    ops_split = op.split(",")
-                    signature = ops_split[-1].split(":")[1]
-                    for o in ops_split[:-1]:
-                        o += ":" + signature
-                        self.ops.append(o)
-                    self.ops.append(ops_split[-1])
-                else:
-                    self.ops.append(op)
+        self._parse_ops(text)
             
         # Get predicates
-        a, b = text.find('preds'), text.find('%axioms%')
-        self.preds = []
-        if a != -1:
-            preds = text[a+5:b].strip().replace(" ", "").split("\n")
-            for pred in preds:
-                if "," in pred:
-                    preds_split = pred.split(",")
-                    signature = preds_split[-1].split(":")[1]
-                    for p in preds_split[:-1]:
-                        p += ":" + signature
-                        self.preds.append(p)
-                    self.preds.append(preds_split[-1])
-                else:
-                    self.preds.append(pred)            
+        self._parse_preds(text)        
 
         # Get axioms
-        a, b = text.find('%axioms%'), text.find('end')
-        axioms_text =  text[a+8:b]
-        self.axioms = []
+        self._parse_axioms(text)
 
-        # if same quantifier used many times, place it everywhere
-        flag = False
-        for line in axioms_text.split("\n"):
-            line_str = line.strip()
-            if line_str.startswith("forall"):   
-                line_str = line_str.replace(";", " .forall ")
-                quantifier = line_str
-                flag = True
-            elif line_str.startswith("exists!"):
-                line_str = line_str.replace(";", " .exists! ")
-                quantifier = line_str
-                flag = True
-            elif line_str.startswith("exists"):
-                line_str = line_str.replace(";", " .exists ")
-                quantifier = line_str
-                flag = True
-            else:
-                if line_str:
-                    line_str = re.sub('%[^%]+%', '', line_str).strip()
-                    if flag:
-                        self.axioms.append(quantifier + " " + line_str)
-                    else:
-                        self.axioms += line_str.split(".")
-                else:
-                    flag = False
+        # Get views if generic
+        self._parse_views(text)
+
+        # Replace occurences
         self._encode()
 
     def _encode(self):
+        """ Finds occurences of each sosrt / predicate / operation in axioms as well as variables """
         # Encode sorts
         dic = {}
         for i, sort in enumerate(self.sorts):
@@ -100,7 +181,10 @@ class CASLSpecification:
         dic = {}
         for i, op in enumerate(self.ops):
             symbol, signature = op.split(":")
-            arguments, ret = signature.split("->")
+            if "->" in signature:
+                arguments, ret = signature.split("->")
+            else:
+                arguments, ret = "", signature
             dic[f"_o{i}_"] = {"name": symbol, "signature":{"arguments": arguments.split(","), "return":ret}, "original":op}
         self._ops = dic
 
@@ -306,8 +390,37 @@ class CASLSpecification:
             res.append(new_spec)
         return res
 
+    def rename(self, renamings):
+        temp = copy.copy(self.sorts)
+        for i, s in enumerate(self.sorts):
+            if s in renamings.keys():
+                temp[i] = renamings[s]
+        self.sorts = temp
 
-        
+        temp = copy.copy(self.ops)
+        for i, o in enumerate(self.ops):
+            for k in renamings.keys():
+                if k in o:
+                    temp[i] = temp[i].replace(k, renamings[k])
+        self.ops = temp     
+
+        temp = copy.copy(self.preds)
+        for i, p in enumerate(self.preds):
+            for k in renamings.keys():
+                if k in p:
+                    temp[i] = temp[i].replace(k, renamings[k])
+        self.preds = temp    
+
+        temp = copy.copy(self.axioms)
+        for i, ax in enumerate(self.preds):
+            for k in renamings.keys():
+                if k in ax:
+                    temp[i] = temp[i].replace(k, renamings[k])
+        self.axioms = temp  
+
+        self._encode()     
+
+
 
 if __name__ == "__main__":
     spec1 = """  
@@ -359,19 +472,13 @@ if __name__ == "__main__":
     end
     """
 
-    linkage1 = CASLSpecification()
-    linkage1.parse_text(spec1)
 
-    linkage2 = CASLSpecification()
-    linkage2.parse_text(spec2)
-
-    a = linkage1.intersect(linkage2)
-    print(a)
-
-    b = linkage1.disjoint_union(linkage2)
-    print(b)
-
-    source = CASLSpecification()
-    source.read_from_file("CASL Specifications\specs\spec.txt")
+    csp1 = CASLSpecification()
+    csp1.read_from_file("CASL Specifications\specs\I.txt")
+    
+    gen = CASLSpecification()
+    gen.read_from_file("CASL Specifications\specs\G.txt")
+    csp1.rename(gen.f2["renamings"])
+    print(csp1)
     #for i, spec in enumerate(source.axiom_elimination_operator()):
         #spec.write_to_file(f"CASL Specifications\specs\spec_out_{i}.txt")

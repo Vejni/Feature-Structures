@@ -3,7 +3,7 @@ import sys
 from feature_structure import FeatureStructure
 # setting path
 sys.path.append('../Amalgamation')
-from amalgam import Category
+from amalgam import Category, Span
 
 class FeatureTermCategory(Category): 
     def __init__(self, sorts, feat):

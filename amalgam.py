@@ -1,12 +1,12 @@
 import abc
 
 class Span:
-    def __init__(self, csp1, csp2, csp_gen, f1, f2):
+    def __init__(self, csp1, csp2, f1, f2, csp_gen=None):
         self.csp1 = csp1
         self.csp2 = csp2
-        self.csp_gen = csp_gen
         self.f1 = f1
         self.f2 = f2
+        self.csp_gen = csp_gen
 
 class Category(object):
     __metaclass__ = abc.ABCMeta
@@ -71,6 +71,10 @@ class Category(object):
     def amalgamate(self, span):
         csp1 = self.rename(span.csp1, span.f1)
         csp2 = self.rename(span.csp2, span.f2)
+
+        if span.csp_gen is None:
+            span.csp_gen = self.get_csp_gen(csp1, csp2)
+            
         csp1_pull = self.pullback(span.csp1, span.csp_gen)
         csp2_pull = self.pullback(span.csp2, span.csp_gen)
         csp_pull = self.pullback(csp1_pull, csp2_pull)
@@ -83,6 +87,9 @@ class Category(object):
         results = []
         csp1 = self.rename(span.csp1, span.f1)
         csp2 = self.rename(span.csp2, span.f2)
+
+        if span.csp_gen is None:
+            span.csp_gen = self.get_csp_gen(csp1, csp2)
 
         csp0_gens = [[self.generalisation_step(span.csp_gen)]]
         for i in range(n_gens):

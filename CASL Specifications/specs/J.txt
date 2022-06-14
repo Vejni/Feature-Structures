@@ -1,0 +1,63 @@
+spec J =
+
+sorts 
+	Grade, ScaleSchema, Scale
+	%( ScaleSchema sort corresponds to the entire configuration defined 
+	in the specification, i.e., the image schema gestalt )%
+
+ops   scale : ScaleSchema -> Scale
+
+	scsc: ScaleSchema
+
+	a_scale: Scale
+	%( instantiate a ScaleSchema and a Scale )%
+	
+	gr_1, gr_2, gr_3, gr_4: Grade
+	%( instantiate four Grades )%
+
+preds
+	
+	inScale: Grade * Scale
+	%( predicate specifying that a Grade is "in" a Scale )%
+
+	more, less: Grade * Grade
+	%( predicates specifying that a Grade is "more" or less" than 
+	another one on the ScaleSchema )%
+
+
+%axioms% 
+	
+	forall s: ScaleSchema; x,y,z: Grade
+
+    	. forall c:Scale
+    	%( scales are always part of a unique SCALARITY schema )%
+    	. exists! sc:ScaleSchema . scale(sc) = c
+
+    	%( distinct grades of a scale are comparable )%
+    	. inScale(x,scale(s)) /\ inScale(y,scale(s)) /\ not x = y
+    	=> more(x,y) \/ more(y,x)
+
+    	%( two comparable grades are on the same scale of a SCALARITY schema )%
+    	. more(x,y) => exists! sc:ScaleSchema
+    	. inScale(x,scale(sc)) /\ inScale(y,scale(sc))
+     
+    	%( less is the inverse of more )%
+    	. less(x,y) <=> more(y,x)
+
+		%( ''more'' has the properties of a total order )%
+
+    	. not more(x,x)				%( irreflexive )%
+    	. more(x,y) /\ more(y,z) => more(x,z)	%( transitive )%
+		. more(x,y) => not more(y,x) %( asymmetry )%
+
+
+	.scale(scsc)=a_scale
+	.inScale(gr_1,a_scale) .inScale(gr_2,a_scale)
+	.inScale(gr_3,a_scale) .inScale(gr_4,a_scale)
+	%( declare that the four instantiated Grades are 
+	in the instantiated ScaleSchema )%
+
+	.more(gr_4,gr_3) .more(gr_3,gr_2) .more(gr_2,gr_1)
+	%( declare which Grade is "more" than which )%
+
+end 

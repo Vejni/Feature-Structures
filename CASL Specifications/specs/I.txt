@@ -1,0 +1,93 @@
+spec I = 
+
+sorts Point, Line
+
+ops
+	c_1, c_2, c_3, c_4,
+	c_5, c_6, c_7, c_8: Point
+	%( instantiate eight points )%
+
+	r_21, r_52, r_85: Line
+	%( instantiate twelve Lines )%
+	r_31, r_41, r_53, r_62, r_64, 
+	r_73, r_74, r_86, r_87: Line
+	%( instantiate twelve Lines )%
+
+preds
+	%( the "intersect" predicate is defined on pairs of Points, pairs of Lines, or a Point and a Line )%
+	intersectLL: Line * Line
+
+	%( these predicates are defined on pairs of Lines, pairs of Points, 
+	or a Line and a Point, and they express relative position )%
+
+	__backLL__,__frontLL__,__leftLL__,__leftBackLL__,__leftFrontLL__,
+	__rightLL__,__rightBackLL__,__rightFrontLL__  : Line * Line
+
+	intersectLP: Line * Point
+	intersectPP: Point * Point
+
+	%( these predicates are defined on pairs of Lines, pairs of Points, 
+	or a Line and a Point, and they express relative position )%
+
+	__backPP__,__frontPP__,__leftPP__,__leftBackPP__,__leftFrontPP__,
+	__rightPP__,__rightBackPP__,__rightFrontPP__,__rightPP__,__leftPP__  : Point * Point
+
+	__backLP__,__frontLP__,__leftLP__,__leftBackLP__,__leftFrontLP__,
+	__rightLP__,__rightBackLP__,__rightFrontLP__,__rightLP__,__leftLP__ : Line * Point
+
+
+%axioms%
+
+
+	%( describe the precise relative positions of all pairs of instantiated Points )%
+	.c_1 rightBackPP c_2 .c_2 leftFrontPP c_1 
+	.c_1 rightBackPP c_5 .c_5 leftFrontPP c_1
+	.c_5 leftBackPP c_8 .c_8 rightFrontPP c_5 
+
+	.c_1 backPP c_8 .c_8 frontPP c_1
+	.c_2 backPP c_5 .c_5 frontPP c_2
+
+	%( describe the precise topological relation - here, intersection - 
+	of Lines with Points and lines with lines )%
+	.intersectLP(r_21,c_1) .intersectLP(r_21,c_2) 
+	.intersectLP(r_52,c_2) .intersectLP(r_52,c_5) 
+	.intersectLP(r_85,c_5) .intersectLP(r_85,c_8) 
+
+	%( describe the precise relative positions of all pairs of instantiated Points )%
+	.c_3 rightBackPP c_5 .c_5 leftFrontPP c_3 
+	.c_4 rightBackPP c_5 .c_5 leftFrontPP c_4 
+	.c_4 rightBackPP c_6 .c_6 leftFrontPP c_4 
+	.c_4 rightBackPP c_8 .c_8 leftFrontPP c_4 
+	.c_7 rightBackPP c_8 .c_8 leftFrontPP c_7 
+
+	.c_1 leftBackPP c_4 .c_4 rightFrontPP c_1 
+	.c_1 leftBackPP c_7 .c_7 rightFrontPP c_1 
+	.c_2 leftBackPP c_6 .c_6 rightFrontPP c_2 
+	.c_2 leftBackPP c_7 .c_7 rightFrontPP c_2 
+	.c_2 leftBackPP c_8 .c_8 rightFrontPP c_2 
+	.c_3 leftBackPP c_7 .c_7 rightFrontPP c_3 
+
+	.c_1 backPP c_3 .c_3 frontPP c_1 
+	.c_1 backPP c_6 .c_6 frontPP c_1 .c_2 leftPP c_3 .c_3 rightPP c_2 
+	.c_2 leftPP c_4 .c_4 rightPP c_2 
+	.c_3 leftPP c_4 .c_4 rightPP c_3 
+	.c_3 backPP c_6 .c_6 frontPP c_3 .c_5 leftPP c_6 .c_6 rightPP c_5 
+	.c_3 backPP c_8 .c_8 frontPP c_3 .c_5 leftPP c_7 .c_7 rightPP c_5 
+	.c_4 backPP c_7 .c_7 frontPP c_4 .c_6 leftPP c_7 .c_7 rightPP c_6 
+	.c_6 backPP c_8 .c_8 frontPP c_6 
+
+	%( describe the precise topological relation - here, intersection - 
+	of Lines with Points and lines with lines )%
+	.intersectLP(r_31,c_1) .intersectLP(r_31,c_3)
+	.intersectLP(r_41,c_1) .intersectLP(r_41,c_4)
+	.intersectLP(r_53,c_3) .intersectLP(r_53,c_5)
+	.intersectLP(r_62,c_2) .intersectLP(r_62,c_6) 
+	.intersectLP(r_64,c_4) .intersectLP(r_64,c_6)
+	.intersectLP(r_73,c_3) .intersectLP(r_73,c_7)
+	.intersectLP(r_74,c_4) .intersectLP(r_74,c_7) 
+	.intersectLP(r_86,c_6) .intersectLP(r_86,c_8)
+	.intersectLP(r_87,c_7) .intersectLP(r_87,c_8) 
+
+	.intersectLL(r_53,r_62) .intersectLL(r_64,r_73)
+
+end
