@@ -78,14 +78,11 @@ def test_subsumes():
     }
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
     
-    morph_f = dict(zip(feat, feat))
-    morph_t = dict(zip(sorts.keys(), sorts.keys()))
+    assert fs2.subsumes(fs1)
+    assert not fs1.subsumes(fs2)
 
-    assert fs2.subsumes(fs1, morph_f, morph_t)
-    assert not fs1.subsumes(fs2, morph_f, morph_t)
-
-    assert fs1.subsumes(fs1, morph_f, morph_t)
-    assert fs2.subsumes(fs2, morph_f, morph_t)
+    assert fs1.subsumes(fs1)
+    assert fs2.subsumes(fs2)
 
     # Carpenter 11
     sorts = {"agr": "_", "1st": "_", "sing": "_", "_": "_"}
@@ -101,11 +98,8 @@ def test_subsumes():
     trans_func = {("PERS", "Q1"): "Q2", ("NUM", "Q1"): "Q3"}
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    morph_f = dict(zip(feat, feat))
-    morph_t = dict(zip(sorts.keys(), sorts.keys()))
-
-    assert fs1.subsumes(fs2, morph_f, morph_t)
-    assert not fs2.subsumes(fs1, morph_f, morph_t)
+    assert fs1.subsumes(fs2)
+    assert not fs2.subsumes(fs1)
 
     # Carpenter 12
     sorts = {"sign": "phrase", "agr": "_", "phrase": "_", "1st": "_", "sing": "_", "_": "_"}
@@ -121,11 +115,8 @@ def test_subsumes():
     trans_func = {("AGR", "Q1"): "Q2", ("PERS", "Q2"): "Q3", ("NUM", "Q2"): "Q4"}
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    morph_f = dict(zip(feat, feat))
-    morph_t = dict(zip(sorts.keys(), sorts.keys()))
-
-    assert fs1.subsumes(fs2, morph_f, morph_t)
-    assert not fs2.subsumes(fs1, morph_f, morph_t)
+    assert fs1.subsumes(fs2)
+    assert not fs2.subsumes(fs1)
 
     # Carpenter 13
     sorts = {"sign": "_", "agr": "_", "1st": "_", "_": "_"}
@@ -141,11 +132,8 @@ def test_subsumes():
     trans_func = {("PRED", "Q1"): "Q2", ("SUBJ", "Q1"): "Q2", ("PERS", "Q2"): "Q3"}
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    morph_f = dict(zip(feat, feat))
-    morph_t = dict(zip(sorts.keys(), sorts.keys()))
-
-    assert fs1.subsumes(fs2, morph_f, morph_t)
-    assert not fs2.subsumes(fs1, morph_f, morph_t)
+    assert fs1.subsumes(fs2)
+    assert not fs2.subsumes(fs1)
 
     # Carpenter 14
     sorts = {"prop": "_", "_": "_"}
@@ -162,11 +150,8 @@ def test_subsumes():
     trans_func = {("ARG1", "Q"): "Q"}
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    morph_f = dict(zip(feat, feat))
-    morph_t = dict(zip(sorts.keys(), sorts.keys()))
-
-    assert fs1.subsumes(fs2, morph_f, morph_t)
-    assert not fs2.subsumes(fs1, morph_f, morph_t)
+    assert fs1.subsumes(fs2)
+    assert not fs2.subsumes(fs1)
 
     # Carpenter 15
     sorts = {"false": "_", "_": "_"}
@@ -183,11 +168,8 @@ def test_subsumes():
     trans_func = {("ARG", "Q"): "Q"}
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    morph_f = dict(zip(feat, feat))
-    morph_t = dict(zip(sorts.keys(), sorts.keys()))
-
-    assert fs1.subsumes(fs2, morph_f, morph_t)
-    assert not fs2.subsumes(fs1, morph_f, morph_t)
+    assert fs1.subsumes(fs2)
+    assert not fs2.subsumes(fs1)
 
     # Carpenter 16
     sorts = {"agr": "_", "sign": "_", "1st": "_", "_": "_"}
@@ -204,11 +186,8 @@ def test_subsumes():
     trans_func = {("AGR", "Q1"): "Q2", ("PERS", "Q2"): "Q3"}
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    morph_f = dict(zip(feat, feat))
-    morph_t = dict(zip(sorts.keys(), sorts.keys()))
-
-    assert not fs1.subsumes(fs2, morph_f, morph_t)
-    assert not fs2.subsumes(fs1, morph_f, morph_t)
+    assert not fs1.subsumes(fs2)
+    assert not fs2.subsumes(fs1)
 
 def test_alphabetic_variant():
     sorts = {"sign": "_", "agr": "_", "1st": "_", "_": "_"}
@@ -617,3 +596,53 @@ def test_variable_equality_elimination_operator():
 
     gens = fs1.variable_equality_elimination_operator(looping=False)
     assert fs2.alphabetic_variant(gens[2])
+
+def test_rename():
+    sorts = {
+        "Rightarrow": "Arrow",
+        "Leftarrow": "Arrow",
+        "Arrow": "Symbol",
+        "Silhouette": "Symbol",
+        "Symbol": "_",
+        "Icon": "_",
+        "_": "_"
+    }
+    feat = ["leftside", "rightside", "left", "right"]
+    nodes = ["Q1", "Q2", "Q3", "Q4"]
+    root = "Q1"
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "Arrow"
+    }
+    trans_func = {    
+        ("leftside", "Q1"): "Q2",
+        ("rightside", "Q1"): "Q3", 
+        ("left", "Q3"): "Q4",
+        ("right", "Q2"): "Q4"      
+    }
+    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    feature_renamings = {
+        "leftside": "LEFTSIDE",
+        "rightside": "RIGHTSIDE",
+        "left": "LEFT",
+        "right": "RIGHT"
+    }
+
+    sort_renamings = {
+        "Icon": "ICON",
+        "Silhouette": "SILHOUETTE",
+        "Arrow": "ARROW"
+    }
+
+    fs1.rename([sort_renamings, feature_renamings])
+    fs_rename = fs1
+    assert set(sort_renamings.values()).issubset(set(list(fs_rename.sorts.keys()) + list(fs_rename.sorts.values())))
+    assert all([item not in set(list(fs_rename.sorts.keys()) + list(fs_rename.sorts.values())) for item in list(sort_renamings.keys())])
+    assert set(feature_renamings.values()).issubset(fs_rename.feat)
+    assert all([item not in fs_rename.feat for item in list(feature_renamings.keys())])
+    
+def test_disjoint_unify():
+    pass

@@ -7,6 +7,8 @@ class CASLSpecification:
         self.ops = []
         self.preds = []
         self.axioms = []
+        self.f1 = None
+        self.f2 = None
 
     def _parse_sorts(self, text):
         a = text.find('sorts')
@@ -309,7 +311,6 @@ class CASLSpecification:
             if flag:
                 del self.ops[i]
                 del self._ops[o]
-        print(self)
 
     def has_axiom(self, spec, ax):
         """ Check if spec has axiom ax from self """
@@ -364,16 +365,26 @@ class CASLSpecification:
         new_spec._tidy_signature()
         return new_spec
 
-    def disjoint_union(self, spec):
+    def disjoint_union(self, spec1, spec2):
         """ Computes the disjoint union or pushout of two specifications """
         new_spec = CASLSpecification() 
-        new_spec.name = self.name  + "_+_" + spec.name 
-        new_spec.sorts = list(set(self.sorts + spec.sorts))
-        new_spec.preds = list(set(self.preds + spec.preds))
+        new_spec.name = spec1.name  + "_+_" + spec2.name 
+
+        for s1 in spec1.sorts:
+            if s1 in self.sorts and s1 in spec2.sorts:
+                new_spec.sorts.append(s1)
+            else:
+                new_spec.sorts.append(s1 + "_1")
+
+        
+
+        #
+        new_spec.sorts = list(set(spec1.sorts + spec2.sorts))
+        new_spec.preds = list(set(spec1.preds + spec2.preds))
         new_spec.axioms = list(set(spec.axioms))
 
         for i, a1 in enumerate(self._axioms):
-            if not spec.has_axiom(self, a1):
+            if not (spec.has_axiom(self, a1) and spec_gen.has_axiom(self, a1)):
                 new_spec.axioms.append(self.axioms[i])
 
         new_spec._encode()
@@ -418,7 +429,7 @@ class CASLSpecification:
                     temp[i] = temp[i].replace(k, renamings[k])
         self.axioms = temp  
 
-        self._encode()     
+        self._encode()
 
 
 

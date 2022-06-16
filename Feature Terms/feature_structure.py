@@ -3,6 +3,7 @@ import copy
 import os, errno
 
 def silentremove(filename):
+    """ Function to surpress errors when handling files """
     try:
         os.remove(filename)
     except OSError as e: # this would be "except OSError, e:" before Python 2.6
@@ -11,6 +12,8 @@ def silentremove(filename):
     
 def sort_leq(sorts, s1, s2):
     """ Checks if s1 <= s2 in the sort hierarchy, that is if s2 is more specific than s1. """
+    s1, s2 = s1.replace("1.", "").replace("2.", ""), s2.replace("1.", "").replace("2.", "")
+
     if s1 not in sorts.keys() or s2 not in sorts.keys():
         return False
 
@@ -36,6 +39,7 @@ def find_most_common_sort(sorts, s1, s2):
         return s1
 
 def powerset(s):
+    """ Simple powerset helper function """
     x = len(s)
     masks = [1 << i for i in range(x)]
     for i in range(1 << x):
@@ -60,6 +64,8 @@ class FeatureStructure:
         self.root = root
         self.typing_func = typing_func
         self.trans_func = trans_func
+        self.f1 = None
+        self.f2 = None
 
         # Check invalid structures
         # Test root
@@ -123,6 +129,7 @@ class FeatureStructure:
         return set(self.nodes) == set(fs.nodes) and self.root == fs.root and self.typing_func == fs.typing_func and self.trans_func == fs.trans_func
 
     def plot(self, name="Feature Structure", folder = "Feature Terms/plots/", filename="fs.gv", view=False):
+        """ Plot a feature structure as a graph, using graphviz """
         g = graphviz.Digraph(name)
         g.attr(rankdir='LR', size='8,5')
         g.attr('node', shape='circle')
@@ -164,7 +171,7 @@ class FeatureStructure:
             for (f1, q1) in gen1:
                 for (f2, q2) in gen2:
                     if(
-                        f1 == f2 and 
+                        f1.replace("1.", "").replace("2.", "") == f2.replace("1.", "").replace("2.", "") and 
                         sort_leq(fs.sorts, self.typing_func[self.trans_func[(f1, q1)]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
                         not (self.trans_func[(f1, q1)] == q1 and fs.trans_func[(f2, q2)] != q2)                  
                     ):
@@ -303,6 +310,10 @@ class FeatureStructure:
         return res
 
     def variable_equality_elimination_operator(self, looping = True):
+        """
+        Generates alll possible generalisations by breaking variable equality, the looping argument can 
+        control if returning arrows should be kept or not, which can b ealmost thought of as a separate operator.
+        """
         res = []
         qt = [q for q in self.nodes if list(self.trans_func.values()).count(q) > 1]
         if list(self.trans_func.values()).count(self.root):
@@ -329,7 +340,44 @@ class FeatureStructure:
                 res.append(fs)
         return res
                 
- 
+    def rename(self, f):
+        """ 
+        Renames features and sorts of self as specified in f
+        The first argument of f is a dictionary of sort renamings, and the second is a dictionary of feature renamings.
+        Modified self.
+        """
+        if f is None:
+            return self
+
+        sort_renamings = copy.copy(f[0])
+        sorts = self.sorts
+        self.sorts = {}
+        for k, v in sorts.items():
+            if k in sort_renamings.keys():
+                k = sort_renamings[k]
+            if v in sort_renamings.keys():
+                v = sort_renamings[v]
+            self.sorts[k] = v    
+
+        for k, v in self.typing_func.items():
+            if v in sort_renamings.keys():
+                self.typing_func[k] = sort_renamings[v]
+
+        feature_renamings = f[1]
+        transitions = copy.copy(self.trans_func)
+        self.trans_func = {}
+        for k, v in transitions.items():
+            if k[0] in feature_renamings.keys():
+                self.trans_func[(feature_renamings[k[0]], k[1])] = v 
+            else:
+                self.trans_func[k] = v 
+
+        feat = copy.copy(self.feat)
+        self.feat = []
+        for fe in feat:
+            if fe in feature_renamings.keys():
+                fe = feature_renamings[fe]
+            self.feat.append(fe)
 
 if __name__ == "__main__":
     sorts = {
