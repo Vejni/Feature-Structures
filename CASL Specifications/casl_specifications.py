@@ -378,16 +378,7 @@ class CASLSpecification:
 
         
 
-        #
-        new_spec.sorts = list(set(spec1.sorts + spec2.sorts))
-        new_spec.preds = list(set(spec1.preds + spec2.preds))
-        new_spec.axioms = list(set(spec.axioms))
 
-        for i, a1 in enumerate(self._axioms):
-            if not (spec.has_axiom(self, a1) and spec_gen.has_axiom(self, a1)):
-                new_spec.axioms.append(self.axioms[i])
-
-        new_spec._encode()
         return new_spec    
 
     def axiom_elimination_operator(self):
