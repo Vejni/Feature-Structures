@@ -390,42 +390,39 @@ if __name__ == "__main__":
         "_": "_"
     }
     feat = ["leftside", "rightside", "left", "right"]
-    nodes = ["Q1", "Q2",  "Q4"]
-    root = "Q1"
-    typing_func = {
-        "Q1": "Icon",
-        "Q2": "Silhouette",
-        "Q4": "Arrow"
-    }
-    trans_func = {
-        ("leftside", "Q1"): "Q2",
-        ("right", "Q2"): "Q4"      
-    }
-    fs1 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
     nodes = ["Q1", "Q2", "Q3", "Q4"]
     root = "Q1"
     typing_func = {
         "Q1": "Icon",
         "Q2": "Silhouette",
         "Q3": "Silhouette",
-        "Q4": "Arrow"
+        "Q4": "Rightarrow"
     }
-    trans_func = {    
+    trans_func = {
         ("leftside", "Q1"): "Q2",
-        ("rightside", "Q1"): "Q3", 
-        ("left", "Q3"): "Q4"         
+        ("rightside", "Q1"): "Q3",
+        ("right", "Q2"): "Q4",
+        ("left", "Q3"): "Q4"           
+    }
+    fs1 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "Leftarrow"
     }
     fs2 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    nodes = ["Q1", "Q2"]
-    root = "Q1"
     typing_func = {
         "Q1": "Icon",
-        "Q2": "Silhouette"
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "Arrow"
     }
-    trans_func = {("leftside", "Q1"): "Q2"}
     fs0 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-
-    print(fs0.disjoint_unify(fs1, fs2))
+    fs0.plot(filename="fs0.gv")
+    fs1.plot(filename="fs1.gv")
+    fs2.plot(filename="fs2.gv")
+    fs0.disjoint_unify(fs1, fs2).plot(filename="unif.gv")

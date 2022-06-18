@@ -645,4 +645,77 @@ def test_rename():
     assert all([item not in fs_rename.feat for item in list(feature_renamings.keys())])
     
 def test_disjoint_unify():
-    pass
+    sorts = {
+        "Rightarrow": "Arrow",
+        "Leftarrow": "Arrow",
+        "Arrow": "Symbol",
+        "Silhouette": "Symbol",
+        "Symbol": "_",
+        "Icon": "_",
+        "_": "_"
+    }
+    feat = ["leftside", "rightside", "left", "right"]
+    nodes = ["Q1", "Q2", "Q3", "Q4"]
+    root = "Q1"
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "Rightarrow"
+    }
+    trans_func = {
+        ("leftside", "Q1"): "Q2",
+        ("rightside", "Q1"): "Q3",
+        ("right", "Q2"): "Q4",
+        ("left", "Q3"): "Q4"           
+    }
+    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "Leftarrow"
+    }
+    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "Q4": "Arrow"
+    }
+    fs0 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    sorts = {
+        "Rightarrow": "Arrow",
+        "Leftarrow": "Arrow",
+        "1.Rightarrow": "Arrow",
+        "2.Leftarrow": "Arrow",
+        "Arrow": "Symbol",
+        "Silhouette": "Symbol",
+        "Symbol": "_",
+        "Icon": "_",
+        "_": "_"
+    }
+    feat = ["leftside", "rightside", "1.left", "1.right", "2.left", "2.right"]
+    nodes = ["Q1", "Q2", "Q3", "1.Q4", "2.Q4"]
+    root = "Q1"
+    typing_func = {
+        "Q1": "Icon",
+        "Q2": "Silhouette",
+        "Q3": "Silhouette",
+        "1.Q4": "1.Rightarrow",
+        "2.Q4": "2.Leftarrow"
+    }
+    trans_func = {
+        ("leftside", "Q1"): "Q2",
+        ("rightside", "Q1"): "Q3",
+        ("1.right", "Q2"): "1.Q4",
+        ("2.right", "Q2"): "2.Q4",
+        ("1.left", "Q3"): "1.Q4",  
+        ("2.left", "Q3"): "2.Q4"     
+    }
+    fs_uni = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+    assert fs_uni.alphabetic_variant(fs0.disjoint_unify(fs1, fs2))
