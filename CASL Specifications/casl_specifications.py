@@ -117,8 +117,6 @@ class CASLSpecification:
                     else:
                         flag = False
 
-        print(self.axioms) 
-
     def _parse_views(self, text):
         indices = [s.start() for s in re.finditer("view", text)]
         if not len(indices):
@@ -139,6 +137,17 @@ class CASLSpecification:
             v, k = r.split("|->")
             renamings[v.strip()] = k.strip()
         self.f2 = {"domain": domain, "renamings": renamings}     
+    
+    def get_morphisms(self, f):
+        morph_sorts, morph_preds, morph_ops = {}, {}, {}
+        for k, v in f["renamings"].items():
+            if k in self.sorts:
+                morph_sorts[k] = v
+            elif k in [p.split(":")[0] for p in self.preds]:
+                morph_preds[k] = v
+            elif k in [o.split(":")[0] for o in self.ops]:
+                morph_ops[k] = v
+        return (morph_sorts, morph_preds, morph_ops)
                 
     def parse_text(self, text):
         """
@@ -369,24 +378,24 @@ class CASLSpecification:
         new_spec.name = self.name  + "_X_" + spec.name
         morph_sorts, morph_preds, morph_ops = f
 
-        for s1 in self.sorts:
-            if morph_sorts[s1] in spec.sorts:
-                new_spec.sorts.append(morph_sorts[s1])
+        for s1 in spec.sorts:
+            if s1 in morph_sorts.keys() and morph_sorts[s1] in self.sorts:
+                new_spec.sorts.append(s1)
 
-        for p1 in self.preds:
-            if morph_preds[p1] in spec.preds:
-                new_spec.preds.append(morph_preds[p1])
+        for p1 in spec.preds:
+            if p1.split(":")[0] in morph_preds.keys() and morph_preds[p1.split(":")[0]] in [p.split(":")[0] for p in self.preds]:
+                new_spec.preds.append(p1)
 
-        for o1 in self.ops:
-            if morph_ops[o1] in spec.ops:
-                new_spec.ops.append(morph_ops[o1])
+        for o1 in spec.ops:
+            if o1.split(":")[0] in morph_ops.keys() and morph_ops[o1.split(":")[0]] in  [o.split(":")[0] for o in self.ops]:
+                new_spec.ops.append(o1)
                 
         for i, a1 in enumerate(self._axioms):
             if spec.has_axiom(self, a1, f):
                 new_spec.axioms.append(self.axioms[i])
 
         new_spec._encode()
-        new_spec._tidy_signature()
+
         return new_spec
 
     def disjoint_union(self, spec1, spec2, f1, f2):
@@ -396,12 +405,8 @@ class CASLSpecification:
         axioms1 = spec1.axioms
         axioms2 = spec2.axioms
         
-        if spec1.name == f1["domain"]:
-            f1, f2 = f1["renamings"], f2["renamings"]   
-        else:
-            f2, f1 = f1["renamings"], f2["renamings"]
-        morph_sorts1, morph_preds1, morph_ops1 = f1, f1, f1
-        morph_sorts2, morph_preds2, morph_ops2 = f2, f2, f2
+        morph_sorts1, morph_preds1, morph_ops1 = f1
+        morph_sorts2, morph_preds2, morph_ops2 = f2
         out_morph_sorts1, out_morph_preds1, out_morph_ops1 = {}, {}, {}
         out_morph_sorts2, out_morph_preds2, out_morph_ops2 = {}, {}, {}
 

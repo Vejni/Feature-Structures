@@ -21,12 +21,12 @@ class Category(object):
         return
 
     @abc.abstractmethod
-    def pullback(self, csp, csp_gen):
+    def pullback(self, csp1, csp2, f1):
         """ Method to implement """
         return
     
     @abc.abstractmethod
-    def pushout(self, csp1, csp2, csp_gen):
+    def pushout(self, span):
         """ Method to implement """
         return
 
@@ -36,12 +36,12 @@ class Category(object):
         return
 
     @abc.abstractmethod
-    def is_monic(self, csp1, csp2):
+    def is_monic(self, csp1, csp2, f):
         """ Method to implement """
         return
 
     @abc.abstractmethod
-    def is_epic(self, csp1, csp2):
+    def is_epic(self, csp1, csp2, f):
         """ Method to implement """
         return
 
@@ -236,12 +236,12 @@ class Category(object):
             for csp1_gen in csp1_gens:
                 for csp2_gen in csp2_gens:
 
-                    csp1_pull = self.pullback(csp1_gen, csp0_gen, None, span.f1)
-                    csp2_pull = self.pullback(csp2_gen, csp0_gen, None, span.f2)
-                    csp_pull = self.pullback(csp1_pull, csp2_pull, None, None)
+                    csp1_pull = self.pullback(csp1_gen, csp0_gen, span.f1)
+                    csp2_pull = self.pullback(csp2_gen, csp0_gen, span.f2)
+                    csp_pull = self.pullback(csp1_pull, csp2_pull, None)
                     f1 = self.restrict(span.f1, csp_pull)
                     f2 = self.restrict(span.f2, csp_pull)
-                    span_0 = Span(span.csp1, span.csp2, f1, f2, csp_pull)
+                    span_0 = Span(csp1_gen, csp2_gen, f1, f2, csp_pull)
                     amalgam = self.pushout(span_0)   
                     results.append(amalgam[1])
 

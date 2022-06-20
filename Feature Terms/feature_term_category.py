@@ -51,9 +51,9 @@ class FeatureTermCategory(Category):
         # Check morph_t
         dic_t = {s: False for s in fs2.sorts.keys()}
         for s in f[1].values():
-            if dic_t[fe]:
+            if dic_t[s]:
                 return False
-            dic_t[fe] = True
+            dic_t[s] = True
 
         # Check subsumption morph       
         return fs1.subsumes_monic(fs2, f)
