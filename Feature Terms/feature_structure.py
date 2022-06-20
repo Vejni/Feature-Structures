@@ -64,8 +64,6 @@ class FeatureStructure:
         self.root = root
         self.typing_func = typing_func
         self.trans_func = trans_func
-        self.f1 = None
-        self.f2 = None
 
         # Check invalid structures
         # Test root
@@ -146,12 +144,13 @@ class FeatureStructure:
         g.render(folder + filename)
         silentremove(folder + filename)
 
-    def subsumes(self, fs):
+    def subsumes(self, fs, f):
         """ Checks feature structure subsumption in a BFS manner """
-
         if not isinstance(fs, FeatureStructure):
             raise Exception("Object not a feature structure.")
-        
+
+        morph_f, morph_t = f
+
         queue1 = [self.root]
         visited1 = []
         queue2 = [fs.root]
@@ -161,7 +160,7 @@ class FeatureStructure:
             q1, *queue1 = queue1
             q2, *queue2 = queue2      
 
-            if not sort_leq(fs.sorts, self.typing_func[q1], fs.typing_func[q2]):
+            if self.typing_func[q1] not in morph_t.keys() or not sort_leq(fs.sorts, morph_t[self.typing_func[q1]], fs.typing_func[q2]):
                 return False
 
             gen1 = [(f, q) for (f, q) in self.trans_func.keys() if q == q1]
@@ -171,8 +170,9 @@ class FeatureStructure:
             for (f1, q1) in gen1:
                 for (f2, q2) in gen2:
                     if(
-                        f1.replace("1.", "").replace("2.", "") == f2.replace("1.", "").replace("2.", "") and 
-                        sort_leq(fs.sorts, self.typing_func[self.trans_func[(f1, q1)]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
+                        f1 in morph_f.keys() and
+                        morph_f[f1] == f2 and 
+                        sort_leq(fs.sorts, morph_t[self.typing_func[self.trans_func[(f1, q1)]]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
                         not (self.trans_func[(f1, q1)] == q1 and fs.trans_func[(f2, q2)] != q2)                  
                     ):
                         flag = True
@@ -188,20 +188,122 @@ class FeatureStructure:
                     return False
         return True
 
-    def alphabetic_variant(self, fs):
-        """ Checks if two feature structures are alphabetic variants of each other """
-        return self.subsumes(fs) and fs.subsumes(self)
-
-    def antiunify(self, fs):
-        """ Computes the antiunifier as the pair of common nodes """
-
+    def subsumes_monic(self, fs, f):
+        """ Checks if the subsumption map is injective """
         if not isinstance(fs, FeatureStructure):
             raise Exception("Object not a feature structure.")
+
+        morph_f, morph_t = f
+        morph_h = {}
+
+        queue1 = [self.root]
+        visited1 = []
+        queue2 = [fs.root]
+        visited2 = []
+
+        while len(queue1):
+            q1, *queue1 = queue1
+            q2, *queue2 = queue2      
+
+            if self.typing_func[q1] not in morph_t.keys() or not sort_leq(fs.sorts, morph_t[self.typing_func[q1]], fs.typing_func[q2]):
+                return False
+
+            gen1 = [(f, q) for (f, q) in self.trans_func.keys() if q == q1]
+            gen2 = [(f, q) for (f, q) in fs.trans_func.keys() if q == q2]
+
+            if len(gen1) == 0 and len(gen2) == 0:
+                morph_h[q1] = q2
+
+            flag = False
+            for (f1, q1) in gen1:
+                for (f2, q2) in gen2:
+                    if(
+                        f1 in morph_f.keys() and
+                        morph_f[f1] == f2 and 
+                        sort_leq(fs.sorts, morph_t[self.typing_func[self.trans_func[(f1, q1)]]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
+                        not (self.trans_func[(f1, q1)] == q1 and fs.trans_func[(f2, q2)] != q2)                  
+                    ):
+                        flag = True
+                        morph_h[q1] = q2
+                        if self.trans_func[(f1, q1)] not in visited1 and fs.trans_func[(f2, q2)] not in visited2:
+                            queue1.append(self.trans_func[(f1, q1)])
+                            visited1.append(q1)
+                            queue2.append(fs.trans_func[(f2, q2)])
+                            visited2.append(q2)
+                        break
+                if flag and not (len(set(queue1)) != len(queue1) and len(set(queue2)) == len(queue2)):
+                    flag = False
+                else:
+                    return False
+        return len(set(morph_h.values())) == len(list(morph_h.values()))
+
+    def subsumes_epic(self, fs, f):
+        """ Checks if the subsumption map is surjective """
+        if not isinstance(fs, FeatureStructure):
+            raise Exception("Object not a feature structure.")
+
+        morph_f, morph_t = f
+
+        queue1 = [self.root]
+        visited1 = []
+        queue2 = [fs.root]
+        visited2 = []
+
+        while len(queue1):
+            q1, *queue1 = queue1
+            q2, *queue2 = queue2      
+
+            if self.typing_func[q1] not in morph_t.keys() or not sort_leq(fs.sorts, morph_t[self.typing_func[q1]], fs.typing_func[q2]):
+                return False
+
+            gen1 = [(f, q) for (f, q) in self.trans_func.keys() if q == q1]
+            gen2 = [(f, q) for (f, q) in fs.trans_func.keys() if q == q2]
+
+            if len(gen1) == 0:
+                visited1.append(q1)
+            if len(gen2) == 0:
+                visited2.append(q2)
+
+            flag = False
+            for (f1, q1) in gen1:
+                for (f2, q2) in gen2:
+                    if(
+                        f1 in morph_f.keys() and
+                        morph_f[f1] == f2 and 
+                        sort_leq(fs.sorts, morph_t[self.typing_func[self.trans_func[(f1, q1)]]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
+                        not (self.trans_func[(f1, q1)] == q1 and fs.trans_func[(f2, q2)] != q2)                  
+                    ):
+                        flag = True
+                        if self.trans_func[(f1, q1)] not in visited1 and fs.trans_func[(f2, q2)] not in visited2:
+                            queue1.append(self.trans_func[(f1, q1)])
+                            visited1.append(q1)
+                            queue2.append(fs.trans_func[(f2, q2)])
+                            visited2.append(q2)
+                        break
+                if flag and not (len(set(queue1)) != len(queue1) and len(set(queue2)) == len(queue2)):
+                    flag = False
+                else:
+                    return False
+
+        return set(visited2) == set(fs.nodes)
+
+    def alphabetic_variant(self, fs, f):
+        """ Checks if two feature structures are alphabetic variants of each other """
+        morph_f, morph_t = f
+        return self.subsumes(fs, (morph_f, morph_t)) and fs.subsumes(self, (morph_f, morph_t))
+
+    def antiunify(self, fs, f1, f2):
+        """ Computes the antiunifier as the pair of common nodes """
+        if not isinstance(fs, FeatureStructure):
+            raise Exception("Object not a feature structure.")
+
+        morph_f1, morph_t1 = f1
+        morph_f2, morph_t2 = f2
 
         root = (self.root, fs.root)
         nodes = [root]
         typing_func, trans_func = {}, {}
-        typing_func[root] = find_most_common_sort(self.sorts, self.typing_func[self.root], fs.typing_func[fs.root])
+        typing_func[root] = find_most_common_sort(self.sorts, morph_t1[self.typing_func[self.root]], morph_t2[fs.typing_func[fs.root]])
 
         flag = False
         for q0 in nodes:
@@ -210,13 +312,13 @@ class FeatureStructure:
 
             for (f1, q1) in gen1:
                 for (f2, q2) in gen2:
-                    if f1 == f2:
+                    if morph_f1[f1] == morph_f2[f2]:
                         node = (self.trans_func[(f1, q1)], fs.trans_func[(f2, q2)])
                         if node not in nodes:
                             nodes.append(node)
                         else: 
                             flag = True
-                        typing_func[node] = find_most_common_sort(self.sorts, self.typing_func[self.trans_func[(f1, q1)]], fs.typing_func[fs.trans_func[(f2, q2)]])
+                        typing_func[node] = find_most_common_sort(self.sorts, morph_t1[self.typing_func[self.trans_func[(f1, q1)]]], morph_t2[fs.typing_func[fs.trans_func[(f2, q2)]]])
                         trans_func[(f1, q0)] = node
                         break
                 if flag:
@@ -224,10 +326,13 @@ class FeatureStructure:
 
         return FeatureStructure(self.sorts, self.feat, nodes, root, typing_func, trans_func)
 
-    def disjoint_unify(self, fs1, fs2):
+    def disjoint_unify(self, fs1, fs2, f1, f2):
         """ Computes the disjoint union of fs1 and fs2 with objects identified by self """
         if (not isinstance(fs1, FeatureStructure)) or (not isinstance(fs2, FeatureStructure)):
             raise Exception("Object not a feature structure.")
+
+        morph_f1, morph_t1 = f1
+        morph_f2, morph_t2 = f2
 
         root = (self.root, fs1.root, fs2.root)
         nodes = [root]
@@ -248,7 +353,7 @@ class FeatureStructure:
                     for (f1, q1) in gen1:
                         for (f2, q2) in gen2:
                             node = (self.trans_func[(f0, q0)], fs1.trans_func[(f1, q1)], fs2.trans_func[(f2, q2)])
-                            if (f0 == f1 and f0 == f2) and (self.typing_func[node[0]] == fs1.typing_func[node[1]] and self.typing_func[node[0]] == fs2.typing_func[node[2]]):
+                            if (morph_f1[f0] == f1 and morph_f2[f0] == f2) and (morph_t1[self.typing_func[node[0]]] == fs1.typing_func[node[1]] and morph_t2[self.typing_func[node[0]]] == fs2.typing_func[node[2]]):
                                 if node not in nodes:
                                     nodes.append(node)
                                 else: 
@@ -339,90 +444,3 @@ class FeatureStructure:
 
                 res.append(fs)
         return res
-                
-    def rename(self, f):
-        """ 
-        Renames features and sorts of self as specified in f
-        The first argument of f is a dictionary of sort renamings, and the second is a dictionary of feature renamings.
-        Modified self.
-        """
-        if f is None:
-            return self
-
-        sort_renamings = copy.copy(f[0])
-        sorts = self.sorts
-        self.sorts = {}
-        for k, v in sorts.items():
-            if k in sort_renamings.keys():
-                k = sort_renamings[k]
-            if v in sort_renamings.keys():
-                v = sort_renamings[v]
-            self.sorts[k] = v    
-
-        for k, v in self.typing_func.items():
-            if v in sort_renamings.keys():
-                self.typing_func[k] = sort_renamings[v]
-
-        feature_renamings = f[1]
-        transitions = copy.copy(self.trans_func)
-        self.trans_func = {}
-        for k, v in transitions.items():
-            if k[0] in feature_renamings.keys():
-                self.trans_func[(feature_renamings[k[0]], k[1])] = v 
-            else:
-                self.trans_func[k] = v 
-
-        feat = copy.copy(self.feat)
-        self.feat = []
-        for fe in feat:
-            if fe in feature_renamings.keys():
-                fe = feature_renamings[fe]
-            self.feat.append(fe)
-
-if __name__ == "__main__":
-    sorts = {
-        "Rightarrow": "Arrow",
-        "Leftarrow": "Arrow",
-        "Arrow": "Symbol",
-        "Silhouette": "Symbol",
-        "Symbol": "_",
-        "Icon": "_",
-        "_": "_"
-    }
-    feat = ["leftside", "rightside", "left", "right"]
-    nodes = ["Q1", "Q2", "Q3", "Q4"]
-    root = "Q1"
-    typing_func = {
-        "Q1": "Icon",
-        "Q2": "Silhouette",
-        "Q3": "Silhouette",
-        "Q4": "Rightarrow"
-    }
-    trans_func = {
-        ("leftside", "Q1"): "Q2",
-        ("rightside", "Q1"): "Q3",
-        ("right", "Q2"): "Q4",
-        ("left", "Q3"): "Q4"           
-    }
-    fs1 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
-    typing_func = {
-        "Q1": "Icon",
-        "Q2": "Silhouette",
-        "Q3": "Silhouette",
-        "Q4": "Leftarrow"
-    }
-    fs2 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
-    typing_func = {
-        "Q1": "Icon",
-        "Q2": "Silhouette",
-        "Q3": "Silhouette",
-        "Q4": "Arrow"
-    }
-    fs0 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
-    fs0.plot(filename="fs0.gv")
-    fs1.plot(filename="fs1.gv")
-    fs2.plot(filename="fs2.gv")
-    fs0.disjoint_unify(fs1, fs2).plot(filename="unif.gv")

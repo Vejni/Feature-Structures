@@ -50,6 +50,11 @@ class Category(object):
         """ Method to implement """
         return
 
+    @abc.abstractmethod
+    def restrict(self, csp, f):
+        """ Method to implement """
+        return
+
     def reduce_minimal(self, amalgams):
         results = []
         for csp in amalgams:
@@ -141,7 +146,7 @@ class Category(object):
         if not isinstance(span_ref, Span) or not isinstance(span_mes, Span):
             raise Exception("Object not a Span.")
         
-        span_max_int, max_int_ind = self._find_maximally_integrated(span_ref)
+        span_max_int, max_int_ind = self._find_maximally_integrated(span_ref) # This should be a set!!!! get max on this, currently max is only on the intermediate subsumee
         span_mes_ind = self.get_distance(span_mes, span_ref)
 
         not_common_gen = True
@@ -161,7 +166,7 @@ class Category(object):
         if not isinstance(span_ref, Span) or not isinstance(span_mes, Span):
             raise Exception("Object not a Span.")
         
-        span_max_top, max_top_int = self._find_maximally_topologic(span_ref)
+        span_max_top, max_top_int = self._find_maximally_topologic(span_ref) # This should be a set!!!! get max on this, currently max is only on the intermediate subsumee
         span_mes_ind = self.get_distance(span_mes, span_ref)
 
         not_common_gen = True
@@ -181,18 +186,18 @@ class Category(object):
         if not isinstance(span, Span):
             raise Exception("Object not a Span.")
 
-        if span.f1 is not None:
-            self.rename(span.csp1, span.f1)
-        if span.f2 is not None:
-            self.rename(span.csp2, span.f2)
-
         if span.csp_gen is None:
             span.csp_gen = self.get_csp_gen(span.csp1, span.csp2)
+            span.f1 = None
+            span.f2 = None
             
-        csp1_pull = self.pullback(span.csp1, span.csp_gen)
-        csp2_pull = self.pullback(span.csp2, span.csp_gen)
-        csp_pull = self.pullback(csp1_pull, csp2_pull)
-        return self.pushout(span.csp1, span.csp2, csp_pull)   
+        csp1_pull = self.pullback(span.csp1, span.csp_gen, None, span.f1)
+        csp2_pull = self.pullback(span.csp2, span.csp_gen, None, span.f2)
+        csp_pull = self.pullback(csp1_pull, csp2_pull, None, None)
+        f1 = self.restrict(span.f1, csp_pull)
+        f2 = self.restrict(span.f2, csp_pull)
+        span_0 = Span(span.csp1, span.csp2, f1, f2, csp_pull)
+        return self.pushout(span_0)   
 
     def get_generalised_amalgams(self, n_gens, span):
         if (n_gens == 0):
@@ -202,13 +207,11 @@ class Category(object):
             raise Exception("Object not a Span.")
 
         results = []
-        if span.f1 is not None:
-            self.rename(span.csp1, span.f1)
-        if span.f2 is not None:
-            self.rename(span.csp2, span.f2)
 
         if span.csp_gen is None:
-            span.csp_gen = self.get_csp_gen(span.csp1, span.csp2)
+            span.csp_gen = self.get_csp_gen(span.csp1, span.csp2)            
+            span.f1 = None
+            span.f2 = None
 
         csp0_gens = [[self.generalisation_step(span.csp_gen)]]
         for i in range(n_gens):
@@ -216,7 +219,7 @@ class Category(object):
             for csp in csp0_gens[i]:
                 new_gens += self.generalisation_step(csp)
             csp0_gens.append(new_gens)
-        csp0_gens = self.reduce(csp0_gens)
+        csp0_gens = self.reduce(csp0_gens) + [span.csp_gen]
 
         csp1_gens = [[self.generalisation_step(span.csp1)]]
         for i in range(n_gens):
@@ -224,7 +227,7 @@ class Category(object):
             for csp in csp1_gens[i]:
                 new_gens += self.generalisation_step(csp)
             csp1_gens.append(new_gens)
-        csp1_gens = self.reduce(csp1_gens)
+        csp1_gens = self.reduce(csp1_gens) + [span.csp1]
 
         csp2_gens = [[self.generalisation_step(span.csp2)]]
         for i in range(n_gens):
@@ -232,17 +235,20 @@ class Category(object):
             for csp in csp2_gens[i]:
                 new_gens += self.generalisation_step(csp)
             csp2_gens.append(new_gens)
-        csp2_gens = self.reduce(csp2_gens)
+        csp2_gens = self.reduce(csp2_gens) +  [span.csp2]
 
         for csp0_gen in csp0_gens:
             for csp1_gen in csp1_gens:
                 for csp2_gen in csp2_gens:
 
-                    csp1_pull = self.pullback(csp1_gen, csp0_gen)
-                    csp2_pull = self.pullback(csp2_gen, csp0_gen)
-                    csp_pull = self.pullback(csp1_pull, csp2_pull)
-                    amalgam = self.pushout(csp1_gen, csp2_gen, csp_pull)
-                    results.append(amalgam)
+                    csp1_pull = self.pullback(csp1_gen, csp0_gen, None, span.f1)
+                    csp2_pull = self.pullback(csp2_gen, csp0_gen, None, span.f2)
+                    csp_pull = self.pullback(csp1_pull, csp2_pull, None, None)
+                    f1 = self.restrict(span.f1, csp_pull)
+                    f2 = self.restrict(span.f2, csp_pull)
+                    span_0 = Span(span.csp1, span.csp2, f1, f2, csp_pull)
+                    amalgam = self.pushout(span_0)   
+                    results.append(amalgam[1])
 
         results = self.reduce_minimal(results)
         #for i, amalgam in enumerate(results):

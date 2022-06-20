@@ -12,24 +12,70 @@ class FeatureTermCategory(Category):
     def generalisation_step(self, fs):
         return fs.sort_generalisation_operator() + fs.variable_elimination_operator() + fs.variable_equality_elimination_operator()
       
-    def pullback(self, fs1, fs2):
-        return fs1.antiunify(fs2)
+    def pullback(self, fs1, fs2, f1, f2):
+        if f1 is None:
+            f = dict(zip(fs1.feat, fs1.feat))
+            t = dict(zip(fs1.sorts.keys(), fs1.sorts.keys()))
+            f1 = (f, t)
+        if f2 is None:
+            f = dict(zip(fs2.feat, fs2.feat))
+            t = dict(zip(fs2.sorts.keys(), fs2.sorts.keys()))
+            f2 = (f, t)
+        return fs1.antiunify(fs2, f1, f2)
     
-    def pushout(self, fs1, fs2, fs_gen):
-        return [fs1, fs_gen.disjoint_unify(fs1, fs2), fs2]
+    def pushout(self, span):
+        return [span.csp1, span.csp_gen.disjoint_unify(span.csp1, span.csp2, span.f1, span.f2), span.csp2]
     
     def get_csp_gen(self, fs1, fs2):
-        return fs1.antiunify(fs2)
+        return self.pullback(fs1, fs2, None, None)
 
-    def rename(self, fs1, f):
-        fs1.rename(f)
-        return
+    def restrict(self, f, fs):
+        feat_morph = {}
+        for k, v in f[0].items():
+            if k in fs.feat:
+                feat_morph[k] = v
 
-    def is_monic(self, fs1, fs2):
-        return fs1.subsumes(fs2)
+        sort_morph = {}
+        for k, v in f[1].items():
+            if k in fs.sorts.keys():
+                sort_morph[k] = v
+        return (feat_morph, sort_morph)
+
+    def is_monic(self, fs1, fs2, f):
+        f = self.restrict(f, fs1)
+
+        # Check morph_f
+        dic_f = zip(fs2.feat, False)
+        for fe in f[0].values():
+            if dic_f[fe]:
+                return False
+            dic_f[fe] = True
+
+        # Check morph_t
+        dic_t = zip(fs2.sorts.keys(), False)
+        for s in f[1].values():
+            if dic_t[fe]:
+                return False
+            dic_t[fe] = True
+
+        # Check subsumption morph       
+        return fs1.subsumes_monic(fs2, f)
     
-    def is_epic(self, fs1, fs2):
-        return fs1.subsumes(fs2)
+    def is_epic(self, fs1, fs2, f):
+        f = self.restrict(f, fs1)
+
+        # Check morph_f
+        for fe in fs2.feat:
+            if not fe in f[0].values():
+                return False
+
+        # Check morph_t
+        for s in fs2.typing_func.values():
+            if not s in f[1].values():
+                return False
+
+        # Check subsumption morph
+        return fs1.subsumes_epic(fs2, f)
 
     def amalgamate(self, span):
         return super().amalgamate(span)
@@ -79,9 +125,14 @@ if __name__ == "__main__":
         "Q4": "Arrow"
     }
     fs0 = FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-    span = Span(fs1, fs2, fs0.f1, fs0.f2, fs0)    
+
+    f = dict(zip(feat, feat))
+    t = dict(zip(sorts.keys(), sorts.keys()))
+    span = Span(fs1, fs2, (f, t), (f, t), fs0)    
 
     ft = FeatureTermCategory()
+    ft.amalgamate(span)
+
 
     span_gen = Span(ft.generalisation_step(fs1)[0], fs2, fs0.f1, fs0.f2, fs0)
     ft.integration_measure(span, span_gen)

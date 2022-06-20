@@ -262,6 +262,10 @@ class CASLSpecification:
                     return False
             return True
 
+    def alphabetic_variant(self, spec):
+        """ Checks if two specifications are variants of each other """
+        return self.subsumes(spec) and spec.subsumes(self)
+
     def _ax_eq(self, spec, ax1, ax2):
         """ Tests if two axioms are equal, not taking semantics into account """
         for w1, w2 in zip(ax1.split(" "), ax2.split(" ")):
