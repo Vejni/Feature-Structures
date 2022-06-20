@@ -29,9 +29,7 @@ preds
 	
 	forall s: ScaleSchema; x,y,z: Grade
 
-    	. forall c:Scale
-    	%( scales are always part of a unique SCALARITY schema )%
-    	. exists! sc:ScaleSchema . scale(sc) = c
+    	. forall c:Scale . exists! sc:ScaleSchema . scale(sc) = c
 
     	%( distinct grades of a scale are comparable )%
     	. inScale(x,scale(s)) /\ inScale(y,scale(s)) /\ not x = y

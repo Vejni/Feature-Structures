@@ -44,11 +44,6 @@ class Category(object):
     def is_epic(self, csp1, csp2):
         """ Method to implement """
         return
-    
-    @abc.abstractmethod
-    def rename(self, csp, f):
-        """ Method to implement """
-        return
 
     @abc.abstractmethod
     def restrict(self, csp, f):
@@ -191,9 +186,9 @@ class Category(object):
             span.f1 = None
             span.f2 = None
             
-        csp1_pull = self.pullback(span.csp1, span.csp_gen, None, span.f1)
-        csp2_pull = self.pullback(span.csp2, span.csp_gen, None, span.f2)
-        csp_pull = self.pullback(csp1_pull, csp2_pull, None, None)
+        csp1_pull = self.pullback(span.csp1, span.csp_gen, span.f1)
+        csp2_pull = self.pullback(span.csp2, span.csp_gen, span.f2)
+        csp_pull = self.pullback(csp1_pull, csp2_pull, None)
         f1 = self.restrict(span.f1, csp_pull)
         f2 = self.restrict(span.f2, csp_pull)
         span_0 = Span(span.csp1, span.csp2, f1, f2, csp_pull)

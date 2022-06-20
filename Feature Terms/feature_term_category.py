@@ -12,16 +12,13 @@ class FeatureTermCategory(Category):
     def generalisation_step(self, fs):
         return fs.sort_generalisation_operator() + fs.variable_elimination_operator() + fs.variable_equality_elimination_operator()
       
-    def pullback(self, fs1, fs2, f1, f2):
+    def pullback(self, fs1, fs2, f1):
         if f1 is None:
             f = dict(zip(fs1.feat, fs1.feat))
             t = dict(zip(fs1.sorts.keys(), fs1.sorts.keys()))
             f1 = (f, t)
-        if f2 is None:
-            f = dict(zip(fs2.feat, fs2.feat))
-            t = dict(zip(fs2.sorts.keys(), fs2.sorts.keys()))
-            f2 = (f, t)
-        return fs1.antiunify(fs2, f1, f2)
+
+        return fs1.antiunify(fs2, f1)
     
     def pushout(self, span):
         return [span.csp1, span.csp_gen.disjoint_unify(span.csp1, span.csp2, span.f1, span.f2), span.csp2]
@@ -45,14 +42,14 @@ class FeatureTermCategory(Category):
         f = self.restrict(f, fs1)
 
         # Check morph_f
-        dic_f = zip(fs2.feat, False)
+        dic_f = {f: False for f in fs2.feat}
         for fe in f[0].values():
             if dic_f[fe]:
                 return False
             dic_f[fe] = True
 
         # Check morph_t
-        dic_t = zip(fs2.sorts.keys(), False)
+        dic_t = {s: False for s in fs2.sorts.keys()}
         for s in f[1].values():
             if dic_t[fe]:
                 return False

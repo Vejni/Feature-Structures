@@ -350,9 +350,9 @@ def test_antiunify():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
+    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
 
     # Carpenter 12
     sorts = {"sign": "phrase", "agr": "_", "phrase": "_", "1st": "_", "sing": "_", "_": "_"}
@@ -370,9 +370,9 @@ def test_antiunify():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
+    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
 
     # Carpenter 13
     sorts = {"sign": "_", "agr": "_", "1st": "_", "_": "_"}
@@ -390,9 +390,9 @@ def test_antiunify():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
+    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
 
     # Carpenter 14
     sorts = {"prop": "_", "_": "_"}
@@ -411,9 +411,9 @@ def test_antiunify():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
+    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
 
     # Carpenter 15
     sorts = {"false": "_", "_": "_"}
@@ -432,9 +432,9 @@ def test_antiunify():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t), (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
+    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
 
 def test_sort_generalisation_operator():
     sorts = {

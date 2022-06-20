@@ -292,18 +292,16 @@ class FeatureStructure:
         morph_f, morph_t = f
         return self.subsumes(fs, (morph_f, morph_t)) and fs.subsumes(self, (morph_f, morph_t))
 
-    def antiunify(self, fs, f1, f2):
+    def antiunify(self, fs, f):
         """ Computes the antiunifier as the pair of common nodes """
         if not isinstance(fs, FeatureStructure):
             raise Exception("Object not a feature structure.")
-
-        morph_f1, morph_t1 = f1
-        morph_f2, morph_t2 = f2
+        morph_f, morph_t  = f
 
         root = (self.root, fs.root)
         nodes = [root]
         typing_func, trans_func = {}, {}
-        typing_func[root] = find_most_common_sort(self.sorts, morph_t1[self.typing_func[self.root]], morph_t2[fs.typing_func[fs.root]])
+        typing_func[root] = find_most_common_sort(self.sorts, morph_t[self.typing_func[self.root]], fs.typing_func[fs.root])
 
         flag = False
         for q0 in nodes:
@@ -312,13 +310,13 @@ class FeatureStructure:
 
             for (f1, q1) in gen1:
                 for (f2, q2) in gen2:
-                    if morph_f1[f1] == morph_f2[f2]:
+                    if morph_f[f1] == f2:
                         node = (self.trans_func[(f1, q1)], fs.trans_func[(f2, q2)])
                         if node not in nodes:
                             nodes.append(node)
                         else: 
                             flag = True
-                        typing_func[node] = find_most_common_sort(self.sorts, morph_t1[self.typing_func[self.trans_func[(f1, q1)]]], morph_t2[fs.typing_func[fs.trans_func[(f2, q2)]]])
+                        typing_func[node] = find_most_common_sort(self.sorts, morph_t[self.typing_func[self.trans_func[(f1, q1)]]], fs.typing_func[fs.trans_func[(f2, q2)]])
                         trans_func[(f1, q0)] = node
                         break
                 if flag:

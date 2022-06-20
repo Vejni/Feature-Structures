@@ -16,27 +16,19 @@ class CASLSpecificationCategory(Category):
     def pullback(self, spec1, spec2):
         return spec1.intersect(spec2)
     
-    def pushout(self, spec1, spec2, spec_gen):
-        return [spec1, spec_gen.disjoint_union(spec1, spec2), spec2]
+    def pushout(self, span):
+        return [span.csp1, span.csp_gen.disjoint_unify(span.csp1, span.csp2, span.f1, span.f2), span.csp2]
     
     def get_csp_gen(self, spec):
         return self.intersect(spec)
 
-    def rename(self, spec, f):
-        spec.rename(f["renamings"])
-        return
-
-    def is_monic(self, spec1, spec2):
+    def is_monic (self, spec1, spec2):
         return spec1.subsumes(spec2) or spec2.subsumes(spec1)
     
     def is_epic(self, spec1, spec2):
           return spec1.subsumes(spec2) or spec2.subsumes(spec1)
 
-    def amalgamate(self, s1, s2, s_gen):
-        if s_gen.f1["domain"] == s1.name:
-            span = Span(s1, s2, s_gen.f1, s_gen.f2, s_gen)
-        else:
-            span = Span(s1, s2, s_gen.f2, s_gen.f1, s_gen)
+    def amalgamate(self, span):
         return super().amalgamate(span)
 
 
@@ -51,5 +43,7 @@ if __name__ == "__main__":
     gen = CASLSpecification()
     gen.read_from_file("CASL Specifications\specs\G.txt")
 
+    span = Span(csp1, csp2, gen, gen.f1, gen.f2)
+
     casl = CASLSpecificationCategory()
-    casl.amalgamate(csp1, csp2, gen)
+    casl.amalgamate(span)
