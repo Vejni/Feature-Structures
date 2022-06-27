@@ -1,27 +1,18 @@
-spec G =
+spec G_0 =
 
-sorts Degree
-
+sort Node
+	
 ops
-	deg_1, deg_2a, deg_2b, deg_2c,
-	deg_3a, deg_3b, deg_3c, deg_4: Degree
-
-preds
-	higher_deg1, higher_deg2, higher_deg3: Degree * Degree
+	id_1, id_2, id_3, id_4: Node
 
 
-view GJ : G to J = 
-	Degree |-> Grade, deg_1 |-> gr_1, 
-	deg_3a |-> gr_2, deg_3b |-> gr_2, deg_3c |-> gr_2, 
-	deg_2a |-> gr_3, deg_2b |-> gr_3, deg_2c |-> gr_3, 
-	deg_4 |-> gr_4,
-	higher_deg1 |-> more, higher_deg2 |-> more, higher_deg3|-> more
+view G0I : G_0 to I_0 = 
+	Node |-> Point, 
+	id_1 |-> c_1, id_2 |-> c_2,
+	id_3 |-> c_5, id_4 |-> c_8
 
-view GI : G to I =
-	Degree |-> Point, 
-	deg_4 |-> c_1, 
-	deg_3a |-> c_2, deg_3b |-> c_3, deg_3c |-> c_4, 
-	deg_2a |-> c_5, deg_2b |-> c_6, deg_2c |-> c_7, 
-	deg_1 |-> c_8,
-	higher_deg1 |-> __backPP__, higher_deg2 |-> __leftBackPP__, 
-	higher_deg3|-> __rightBackPP__
+
+view G0J : G_0 to J = 
+	Node |-> Location, 
+	id_1 |-> l_1, id_2 |-> l_2,
+	id_3 |-> l_3, id_4 |-> l_4

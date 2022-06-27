@@ -292,47 +292,6 @@ def test_subsumes_epic():
     assert fs2.subsumes_epic(fs2, (morph_f, morph_t))
     assert fs1.subsumes_epic(fs1, (morph_f, morph_t))
 
-def test_alphabetic_variant():
-    sorts = {"sign": "_", "agr": "_", "1st": "_", "_": "_"}
-    feat = ["SUBJ", "PERS", "PRED"]
-    nodes = ["Q1", "Q2", "Q3", "Q4", "Q5"]
-    root = "Q1"
-    typing_func = {"Q1": "sign", "Q2": "agr", "Q3": "agr", "Q4": "1st", "Q5": "1st"}
-    trans_func = {("SUBJ", "Q1"): "Q2", ("PRED", "Q1"): "Q3", ("PERS", "Q2"): "Q4", ("PERS", "Q3"): "Q5"}
-    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
-    sorts = {"sign": "_", "agr": "_", "1st": "_", "_": "_"}
-    feat = ["SUBJ", "PERS", "PRED"]
-    nodes = ["q1", "q2", "q3", "q4", "q5"]
-    root = "q1"
-    typing_func = {"q1": "sign", "q2": "agr", "q3": "agr", "q4": "1st", "q5": "1st"}
-    trans_func = {("SUBJ", "q1"): "q2", ("PRED", "q1"): "q3", ("PERS", "q2"): "q4", ("PERS", "q3"): "q5"}
-    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
-    morph_f = dict(zip(feat, feat))
-    morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs2, (morph_f, morph_t))
-    assert fs2.alphabetic_variant(fs1, (morph_f, morph_t))
-
-    # Carpenter 16
-    sorts = {"agr": "_", "sign": "_", "1st": "_", "_": "_"}
-    feat = ["AGR", "PERS"]
-    nodes = ["Q1", "Q2"]
-    typing_func = {"Q1": "agr", "Q2": "1st"}
-    trans_func = {("PERS", "Q1"): "Q2"}
-    root = "Q1"
-    fs1 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
-    nodes = ["Q1", "Q2", "Q3"]
-    root = "Q1"
-    typing_func = {"Q1": "sign", "Q2": "agr", "Q3": "1st"}
-    trans_func = {("AGR", "Q1"): "Q2", ("PERS", "Q2"): "Q3"}
-    fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-    morph_f = dict(zip(feat, feat))
-    morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert not fs1.alphabetic_variant(fs2, (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1, (morph_f, morph_t))  
-
 def test_antiunify():
     # Carpenter 11
     sorts = {"agr": "_", "1st": "_", "sing": "_", "_": "_"}
@@ -347,12 +306,16 @@ def test_antiunify():
     typing_func = {"Q1": "agr", "Q2": "1st", "Q3": "sing"}
     trans_func = {("PERS", "Q1"): "Q2", ("NUM", "Q1"): "Q3"}
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
-
+    
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    f = (morph_f, morph_t)
+    fs_anti1 = fs1.antiunify(fs2, f)
+    fs_anti2 = fs2.antiunify(fs1, f)
+
+    assert fs1.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs1, f)
+    assert fs1.subsumes(fs_anti2, f) and fs_anti2.subsumes(fs1, f)
+    assert not (fs2.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs2, f))
 
     # Carpenter 12
     sorts = {"sign": "phrase", "agr": "_", "phrase": "_", "1st": "_", "sing": "_", "_": "_"}
@@ -370,9 +333,13 @@ def test_antiunify():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    f = (morph_f, morph_t)
+    fs_anti1 = fs1.antiunify(fs2, f)
+    fs_anti2 = fs2.antiunify(fs1, f)
+
+    assert fs1.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs1, f)
+    assert fs1.subsumes(fs_anti2, f) and fs_anti2.subsumes(fs1, f)
+    assert not (fs2.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs2, f))
 
     # Carpenter 13
     sorts = {"sign": "_", "agr": "_", "1st": "_", "_": "_"}
@@ -390,9 +357,13 @@ def test_antiunify():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    f = (morph_f, morph_t)
+    fs_anti1 = fs1.antiunify(fs2, f)
+    fs_anti2 = fs2.antiunify(fs1, f)
+
+    assert fs1.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs1, f)
+    assert fs1.subsumes(fs_anti2, f) and fs_anti2.subsumes(fs1, f)
+    assert not (fs2.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs2, f))
 
     # Carpenter 14
     sorts = {"prop": "_", "_": "_"}
@@ -411,9 +382,13 @@ def test_antiunify():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    f = (morph_f, morph_t)
+    fs_anti1 = fs1.antiunify(fs2, f)
+    fs_anti2 = fs2.antiunify(fs1, f)
+
+    assert fs1.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs1, f)
+    assert fs1.subsumes(fs_anti2, f) and fs_anti2.subsumes(fs1, f)
+    assert not (fs2.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs2, f))
 
     # Carpenter 15
     sorts = {"false": "_", "_": "_"}
@@ -432,9 +407,13 @@ def test_antiunify():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    assert fs1.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
-    assert fs1.alphabetic_variant(fs2.antiunify(fs1, (morph_f, morph_t)), (morph_f, morph_t))
-    assert not fs2.alphabetic_variant(fs1.antiunify(fs2, (morph_f, morph_t)), (morph_f, morph_t))
+    f = (morph_f, morph_t)
+    fs_anti1 = fs1.antiunify(fs2, f)
+    fs_anti2 = fs2.antiunify(fs1, f)
+
+    assert fs1.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs1, f)
+    assert fs1.subsumes(fs_anti2, f) and fs_anti2.subsumes(fs1, f)
+    assert not (fs2.subsumes(fs_anti1, f) and fs_anti1.subsumes(fs2, f))
 
 def test_sort_generalisation_operator():
     sorts = {
@@ -491,7 +470,7 @@ def test_sort_generalisation_operator():
     gens = fs1.sort_generalisation_operator()
     assert fs2 in gens and fs3 in gens and fs4 in gens
 
-def test_variable_elimination_operator():
+def test_node_elimination_operator():
     sorts = {
         "Rightarrow": "Arrow",
         "Leftarrow": "Arrow",
@@ -530,9 +509,9 @@ def test_variable_elimination_operator():
     }
     fs2 = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
-    assert fs1.variable_elimination_operator()[0] == fs2
+    assert fs1.node_elimination_operator()[0] == fs2
 
-def test_variable_equality_elimination_operator():
+def test_node_equality_elimination_operator():
     sorts = {
         "Rightarrow": "Arrow",
         "Leftarrow": "Arrow",
@@ -577,8 +556,9 @@ def test_variable_equality_elimination_operator():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    gens = fs1.variable_equality_elimination_operator()
-    assert fs2.alphabetic_variant(gens[0], (morph_f, morph_t)) and fs2.alphabetic_variant(gens[1],  (morph_f, morph_t))
+    gens = fs1.node_equality_elimination_operator()
+    assert fs2.subsumes(gens[0], (morph_f, morph_t)) and gens[0].subsumes(fs2, (morph_f, morph_t))
+    assert fs2.subsumes(gens[1], (morph_f, morph_t)) and gens[1].subsumes(fs2, (morph_f, morph_t))
 
     feat = ["leftside", "rightside", "left", "right", "mid"]
     nodes = ["Q1", "Q2", "Q3", "Q4"]
@@ -618,8 +598,8 @@ def test_variable_equality_elimination_operator():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    gens = fs1.variable_equality_elimination_operator()
-    assert fs2.alphabetic_variant(gens[2], (morph_f, morph_t))
+    gens = fs1.node_equality_elimination_operator()
+    assert fs2.subsumes(gens[2], (morph_f, morph_t)) and gens[2].subsumes(fs2, (morph_f, morph_t))
 
     nodes = ["Q1", "Q2", "Q3", "Q4", "Q5"]
     typing_func = {
@@ -640,8 +620,8 @@ def test_variable_equality_elimination_operator():
 
     morph_f = dict(zip(feat, feat))
     morph_t = dict(zip(sorts.keys(), sorts.keys()))
-    gens = fs1.variable_equality_elimination_operator(looping=False)
-    assert fs2.alphabetic_variant(gens[2], (morph_f, morph_t))
+    gens = fs1.node_equality_elimination_operator(looping=False)
+    assert fs2.subsumes(gens[2], (morph_f, morph_t)) and gens[2].subsumes(fs2, (morph_f, morph_t))
 
 def test_disjoint_unify():
     sorts = {
@@ -689,43 +669,43 @@ def test_disjoint_unify():
     sorts = {
         "Rightarrow": "Arrow",
         "Leftarrow": "Arrow",
-        "1.Rightarrow": "Arrow",
-        "2.Leftarrow": "Arrow",
+        "_1_Rightarrow": "Arrow",
+        "_2_Leftarrow": "Arrow",
         "Arrow": "Symbol",
         "Silhouette": "Symbol",
         "Symbol": "_",
         "Icon": "_",
         "_": "_"
     }
-    feat = ["leftside", "rightside", "1.left", "1.right", "2.left", "2.right"]
-    nodes = ["Q1", "Q2", "Q3", "1.Q4", "2.Q4"]
+    feat = ["leftside", "rightside", "_1_left", "_1_right", "_2_left", "_2_right"]
+    nodes = ["Q1", "Q2", "Q3", "_1_Q4", "_2_Q4"]
     root = "Q1"
     typing_func = {
         "Q1": "Icon",
         "Q2": "Silhouette",
         "Q3": "Silhouette",
-        "1.Q4": "1.Rightarrow",
-        "2.Q4": "2.Leftarrow"
+        "_1_Q4": "_1_Rightarrow",
+        "_2_Q4": "_2_Leftarrow"
     }
     trans_func = {
         ("leftside", "Q1"): "Q2",
         ("rightside", "Q1"): "Q3",
-        ("1.right", "Q2"): "1.Q4",
-        ("2.right", "Q2"): "2.Q4",
-        ("1.left", "Q3"): "1.Q4",  
-        ("2.left", "Q3"): "2.Q4"     
+        ("_1_right", "Q2"): "_1_Q4",
+        ("_2_right", "Q2"): "_2_Q4",
+        ("_1_left", "Q3"): "_1_Q4",  
+        ("_2_left", "Q3"): "_2_Q4"     
     }
     fs_uni = fs.FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
 
     morph_f1 = {
         "leftside": "leftside",
         "rightside": "rightside",
-        "left": "1.left",
-        "right": "1.right"
+        "left": "_1_left",
+        "right": "_1_right"
     }
     morph_t1 = {
-        "Rightarrow": "1.Rightarrow",
-        "Leftarrow": "1.Leftarrow",
+        "Rightarrow": "_1_Rightarrow",
+        "Leftarrow": "_1_Leftarrow",
         "Arrow": "Arrow",
         "Symbol": "Symbol",
         "Icon": "Icon",
@@ -737,12 +717,12 @@ def test_disjoint_unify():
     morph_f2 = {
         "leftside": "leftside",
         "rightside": "rightside",
-        "left": "2.left",
-        "right": "2.right"
+        "left": "_2_left",
+        "right": "_2_right"
     }
     morph_t2 = {
-        "Rightarrow": "2.Rightarrow",
-        "Leftarrow": "2.Leftarrow",
+        "Rightarrow": "_2_Rightarrow",
+        "Leftarrow": "_2_Leftarrow",
         "Arrow": "Arrow",
         "Symbol": "Symbol",
         "Icon": "Icon",
@@ -753,4 +733,5 @@ def test_disjoint_unify():
 
     morph_f = dict(zip(fs_uni.feat, fs_uni.feat))
     morph_t = dict(zip(fs_uni.sorts.keys(), fs_uni.sorts.keys()))
-    assert fs_uni.alphabetic_variant(fs0.disjoint_unify(fs1, fs2, f1, f2), (morph_f, morph_t))
+    fs_unif = fs0.disjoint_unify(fs1, fs2, f1, f2)[1]
+    assert fs_uni.subsumes(fs_unif, (morph_f, morph_t)) and fs_unif.subsumes(fs_uni, (morph_f, morph_t))

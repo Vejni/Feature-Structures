@@ -1,0 +1,65 @@
+spec: I_0_+_J
+
+sorts: Node _1_Line _2_SPGschema _2_Path _2_Trajector
+
+ops: 
+	id_1:Node
+	id_2:Node
+	id_3:Node
+	id_4:Node
+	_1_r_21:_1_Line
+	_1_r_52:_1_Line
+	_1_r_85:_1_Line
+	_2_source:_2_SPGschema->Node
+	_2_goal:_2_SPGschema->Node
+	_2_path:_2_SPGschema->_2_Path
+	_2_trajector:_2_SPGschema->_2_Trajector
+	_2_p_1:_2_Path
+	_2_s_1:_2_SPGschema
+
+preds: 
+	_1_intersectPP:Node*Node
+	_1___backPP__:Node*Node
+	_1___frontPP__:Node*Node
+	_1___leftBackPP__:Node*Node
+	_1___leftFrontPP__:Node*Node
+	_1___rightBackPP__:Node*Node
+	_1___rightFrontPP__:Node*Node
+	_1_intersectLP:_1_Line*Node
+	_2_placed:_2_Trajector*Node
+	_2_inPath:Node*_2_Path
+	_2_isFollowedBy:Node*Node*_2_Path
+	_2___contiguous__:Node*Node
+
+axioms: 
+	.id_1 rightBackPP id_2
+	.id_2 leftFrontPP id_1
+	.id_1 rightBackPP id_3
+	.id_3 leftFrontPP id_1
+	.id_3 leftBackPP id_4
+	.id_4 rightFrontPP id_3
+	.id_1 backPP id_4
+	.id_4 frontPP id_1
+	.id_2 backPP id_3
+	.id_3 frontPP id_2
+	._1_intersectLP(_1_r_21,id_2)
+	._1_intersectLP(_1_r_21,id_1)
+	._1_intersectLP(_1_r_52,id_3)
+	._1_intersectLP(_1_r_52,id_2)
+	._1_intersectLP(_1_r_85,id_4)
+	._1_intersectLP(_1_r_85,id_3)
+	forall p : _2_Path . exists! s:_2_SPGschema . _2_path(s) = p
+	forall s: _2_SPGschema . _2_inPath(_2_source(s),_2_path(s))
+	forall s: _2_SPGschema . _2_inPath(_2_goal(s),_2_path(s))
+	forall s: _2_SPGschema . not _2_source(s) = _2_goal(s)
+	forall s: _2_SPGschema . exists! l:Node . _2_inPath(l,_2_path(s)) /\ _2_placed(_2_trajector(s),l)
+	forall k,l: Node .forall  p: _2_Path . k contiguous l <=> _2_isFollowedBy(k,l,p) \/ _2_isFollowedBy(l,k,p)
+	forall s: _2_SPGschema .forall  l: Node . not (_2_isFollowedBy(l,_2_source(s),_2_path(s)) \/ _2_isFollowedBy(_2_goal(s),l,_2_path(s)))
+	forall s: _2_SPGschema .forall  l: Node . _2_inPath(l,_2_path(s)) /\ (not l = _2_source(s) )
+	forall s: _2_SPGschema .forall  l: Node => exists! k: Node . _2_inPath(k,_2_path(s)) /\ _2_isFollowedBy(k,l,_2_path(s))
+	forall s: _2_SPGschema .forall  l: Node . _2_inPath(l,_2_path(s)) /\ (not l = _2_goal(s) )
+	forall s: _2_SPGschema .forall  l: Node => exists! m:Node . _2_inPath(m,_2_path(s)) /\ _2_isFollowedBy(l,m,_2_path(s))
+	forall k, l: Node .forall  p: _2_Path ._2_isFollowedBy(k,l,p) \/ _2_isFollowedBy(l,k,p) => _2_inPath(k,p) /\ _2_inPath(l,p)
+	forall k, l: Node .forall  p: _2_Path ._2_isFollowedBy(id_2,id_1,_2_p_1) ._2_isFollowedBy(id_3,id_2,_2_p_1) ._2_isFollowedBy(id_4,id_3,_2_p_1)
+	forall k, l: Node .forall  p: _2_Path ._2_source(_2_s_1)=id_1 ._2_path(_2_s_1)=_2_p_1 ._2_goal(_2_s_1)=id_4
+

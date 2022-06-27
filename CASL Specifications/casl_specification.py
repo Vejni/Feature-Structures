@@ -3,6 +3,7 @@ import copy
 
 class CASLSpecification:
     def __init__(self):
+        """ Creates specification object, allocates the properties """
         self.sorts = []
         self.ops = []
         self.preds = []
@@ -11,6 +12,7 @@ class CASLSpecification:
         self.f2 = None
 
     def _parse_sorts(self, text):
+        """ Obtain a list of sorts from the signature, sets self.sort """
         a = text.find('sorts')
         if a == -1:
             a = text.find('sort')
@@ -28,6 +30,7 @@ class CASLSpecification:
         self.sorts = re.sub(re.compile(r'\s+'), '',  text[a+5:b]).split(",")
 
     def _parse_ops(self, text):
+        """ Obtain a list of operations from the signature, sets self.ops """
         a = text.find('ops')
         if a == -1:
             a = text.find('op')
@@ -57,6 +60,7 @@ class CASLSpecification:
                     self.ops.append(op.strip())
 
     def _parse_preds(self, text):
+        """ Obtain a list of predicates from the signature, sets self.preds """
         a = text.find('preds')
         if a == -1:
             a = text.find('pred')
@@ -86,6 +90,7 @@ class CASLSpecification:
                     self.preds.append(pred.strip()) 
 
     def _parse_axioms(self, text):
+        """ Obtain a list of axioms from the signature, sets self.axioms """
         a, b = text.find('%axioms%'), text.find("end")
         if a == -1:
             return
@@ -118,6 +123,7 @@ class CASLSpecification:
                         flag = False
 
     def _parse_views(self, text):
+        """ Read the views of the specification if there are any, sets self.f1, self.f2 """
         indices = [s.start() for s in re.finditer("view", text)]
         if not len(indices):
             return
@@ -139,6 +145,7 @@ class CASLSpecification:
         self.f2 = {"domain": domain, "renamings": renamings}     
     
     def get_morphisms(self, f):
+        """ The parsed views are not split by sort, operation or predicate. Split it here manually. """
         morph_sorts, morph_preds, morph_ops = {}, {}, {}
         for k, v in f["renamings"].items():
             if k in self.sorts:
@@ -150,9 +157,7 @@ class CASLSpecification:
         return (morph_sorts, morph_preds, morph_ops)
                 
     def parse_text(self, text):
-        """
-        Parses casl code 
-        """
+        """ Parses the casl specification by calling the relevant methods which each parse the relevant chuncks of code """
 
         # Get name of specification
         self.name = re.findall(r"(?:spec ).+\b" , text)[0].replace("spec ", "")
@@ -245,7 +250,7 @@ class CASLSpecification:
         self._axioms = axioms
             
     def __str__(self):
-        """ Define how to print feature structures to console """
+        """ Define how to print the specification to console """
         name = f"spec: {self.name}" + "\n\n"
         sorts = f"sorts: {' '.join(self.sorts)}" + "\n\n"
         ops = "ops: \n\t" + '\n\t'.join(self.ops) + "\n\n"
@@ -261,27 +266,24 @@ class CASLSpecification:
     def __eq__(self, spec):
         """ Overrides the default implementation of equality, used for testing only """
         if not isinstance(spec, CASLSpecification):
-            return False    
-        if set(self.sorts) == set(spec.sorts) and set(self.ops) == set(spec.ops) and set(self.preds) == set(spec.preds):
-            for axiom in self._axioms:
-                if not self.has_axiom(spec, axiom):
-                    return False
-            for axiom in spec._axioms:
-                if not spec.has_axiom(self, axiom):
-                    return False
-            return True
+            return False   
 
+        if set(self.sorts) == set(spec.sorts) and set(self.ops) == set(spec.ops) and set(self.preds) == set(spec.preds):
+            if len(list(set(self.axioms) & set(spec.axioms))) == len(self.axioms) == len(spec.axioms):
+                return True
+        return False
+            
     def _ax_eq(self, spec, ax1, ax2, f1):
         """ Tests if two axioms are equal, not taking semantics into account """
         morph_sorts, morph_preds, morph_ops = f1
         for w1, w2 in zip(ax1.split(" "), ax2.split(" ")):
             if w1 == w2 or (w1.startswith("_v") and w2.startswith("_v")):
                 continue
-            elif ((w1.startswith("_s") and w2.startswith("_s")) and morph_sorts[self._sorts[w1]] == spec._sorts[w2]):
+            elif ((w1.startswith("_s") and w2.startswith("_s")) and self._sorts[w1] in morph_sorts.keys() and morph_sorts[self._sorts[w1]] == spec._sorts[w2]):
                 continue
-            elif ((w1.startswith("_o") and w2.startswith("_o")) and morph_preds[self._preds[w1]] == spec._ops[w2]):
+            elif ((w1.startswith("_p") and w2.startswith("_p")) and self._preds[w1]["original"].split(":")[0] in morph_preds.keys() and morph_preds[self._preds[w1]["original"].split(":")[0]] == spec._preds[w2]["original"].split(":")[0]):
                 continue
-            elif ((w1.startswith("_p") and w2.startswith("_p")) and morph_ops[self._preds[w1]] == spec._preds[w2]):
+            elif ((w1.startswith("_o") and w2.startswith("_o")) and self._ops[w1]["original"].split(":")[0] in morph_ops.keys() and morph_ops[self._ops[w1]["original"].split(":")[0]] == spec._ops[w2]["original"].split(":")[0]):
                 continue
             else:
                 return False
@@ -353,24 +355,20 @@ class CASLSpecification:
 
         # Check preds
         for pred in self.preds:
-            if morph_preds[pred] not in spec.preds:
+            if morph_preds[pred.split(":")[0]] not in [s.split(":")[0] for s in spec.preds]:
                 return False
 
         # Check ops
         for op in self.ops:
-            if morph_ops[op] not in spec.ops:
+            if morph_ops[op.split(":")[0]] not in [o.split(":")[0] for o in spec.ops]:
                 return False
 
         # Check axioms
         for axiom in spec._axioms:
-            if not self.has_axiom(spec, axiom):
+            if not self.has_axiom(spec, axiom, f):
                 return False
 
         return True
-
-    def alphabetic_variant(self, spec, f):
-        """ Checks if two specifications are variants of each other """
-        return self.subsumes(spec, f) and spec.subsumes(self, f)
 
     def intersect(self, spec, f):
         """ Computes the intersection or pullback of two specifications """
@@ -417,21 +415,25 @@ class CASLSpecification:
             if s0 in morph_sorts1.keys() and s0 in morph_sorts2.keys():
                 dic_sorts1[morph_sorts1[s0]] = False
                 dic_sorts2[morph_sorts2[s0]] = False
-                out_morph_sorts1[morph_sorts1[s0]] = f"{morph_sorts1[s0]}_+_{morph_sorts2[s0]}"
-                out_morph_sorts2[morph_sorts2[s0]] = f"{morph_sorts1[s0]}_+_{morph_sorts2[s0]}"
-                new_spec.sorts.append(f"{morph_sorts1[s0]}_+_{morph_sorts2[s0]}")
+                out_morph_sorts1[morph_sorts1[s0]] = f"{s0}"
+                out_morph_sorts2[morph_sorts2[s0]] = f"{s0}"
+                new_spec.sorts.append(f"{s0}")
                 for i in range(len(axioms1)):
-                    axioms1[i] = re.sub(rf"(?=\b|:){morph_sorts1[s0]}(\b|.)", f"{morph_sorts1[s0]}_+_{morph_sorts2[s0]}", axioms1[i])
+                    axioms1[i] = re.sub(rf"(?=\b|:){morph_sorts1[s0]}(\b|.)", f"{s0}", axioms1[i])
                 for i in range(len(axioms2)):
-                    axioms2[i] = re.sub(rf"(?=\b|:){morph_sorts2[s0]}(\b|.)", f"{morph_sorts1[s0]}_+_{morph_sorts2[s0]}", axioms2[i])
+                    axioms2[i] = re.sub(rf"(?=\b|:){morph_sorts2[s0]}(\b|.)", f"{s0}", axioms2[i])
         for k, v in dic_sorts1.items():
             if v:
-                out_morph_sorts1[k] = k
-                new_spec.sorts.append(k)
+                out_morph_sorts1[k] = f"_1_{k}"
+                new_spec.sorts.append(f"_1_{k}")
+                for i in range(len(axioms1)):
+                    axioms1[i] = re.sub(rf"(?=\b|:){k}(\b|.)", f"_1_{k}", axioms1[i])
         for k, v in dic_sorts2.items():
             if v:
-                out_morph_sorts2[k] = k
-                new_spec.sorts.append(k)
+                out_morph_sorts2[k] = f"_2_{k}"
+                new_spec.sorts.append(f"_2_{k}")
+                for i in range(len(axioms2)):
+                    axioms2[i] = re.sub(rf"(?=\b|:){k}(\b|.)", f"_2_{k}", axioms2[i])
 
         # Add preds
         dic_preds1 = {p : True for p in spec1.preds}
@@ -446,29 +448,33 @@ class CASLSpecification:
                 dic_preds2[f"{morph_preds2[p0]}:{'*'.join(sig2)}"] = False
 
                 sig = [out_morph_sorts1[s] for s in sig1]
-                out_morph_preds1[f"{morph_preds1[p0]}:{'*'.join(sig1)}"] = f"{morph_preds1[p0]}_+_{morph_preds2[p0]}:{'*'.join(sig)}"
-                out_morph_preds2[f"{morph_preds2[p0]}:{'*'.join(sig2)}"] = f"{morph_preds1[p0]}_+_{morph_preds2[p0]}:{'*'.join(sig)}"
-                new_spec.preds.append(f"{morph_preds1[p0]}_+_{morph_preds2[p0]}:{'*'.join(sig)}")
+                out_morph_preds1[f"{morph_preds1[p0]}:{'*'.join(sig1)}"] = f"{p0}:{'*'.join(sig)}"
+                out_morph_preds2[f"{morph_preds2[p0]}:{'*'.join(sig2)}"] = f"{p0}:{'*'.join(sig)}"
+                new_spec.preds.append(f"{p0}:{sig0}")
                 for i in range(len(axioms1)):
-                    axioms1[i] = re.sub(rf"(?=\b|.){morph_preds1[p0]}(\b|.)", f"{morph_preds1[p0]}_+_{morph_preds2[p0]}", axioms1[i])
+                    axioms1[i] = re.sub(rf"(?=\b|.){morph_preds1[p0]}(\b|.)", f"{p0}", axioms1[i])
                 for i in range(len(axioms2)):
-                    axioms2[i] = re.sub(rf"(?=\b|.){morph_preds2[p0]}(\b|.)", f"{morph_preds1[p0]}_+_{morph_preds2[p0]}", axioms2[i])
+                    axioms2[i] = re.sub(rf"(?=\b|.){morph_preds2[p0]}(\b|.)", f"{p0}", axioms2[i])
         for k, v in dic_preds1.items():
             p, sig = k.split(":")
-            sig = [out_morph_sorts1[morph_sorts1[s]] if s in morph_sorts1.keys() else s for s in sig.split("*")]
+            sig = [out_morph_sorts1[s] if s in out_morph_sorts1.keys() else s for s in sig.split("*")]
             if v:
-                out_morph_preds1[k] = f"{p}:{'*'.join(sig)}"
-                new_spec.preds.append(f"{p}:{'*'.join(sig)}")
+                out_morph_preds1[k] = f"_1_{p}:{'*'.join(sig)}"
+                new_spec.preds.append(f"_1_{p}:{'*'.join(sig)}")
+                for i in range(len(axioms1)):
+                    axioms1[i] = re.sub(rf"(?=\b|.){p}(\b|.)", f"_1_{p}", axioms1[i])
         for k, v in dic_preds2.items():
             p, sig = k.split(":")
-            sig = [out_morph_sorts2[morph_sorts2[s]] if s in morph_sorts2.keys() else s for s in sig.split("*")]
+            sig = [out_morph_sorts2[s] if s in out_morph_sorts2.keys() else s for s in sig.split("*")]
             if v:
-                out_morph_preds2[k] = f"{p}:{'*'.join(sig)}"
-                new_spec.preds.append(f"{p}:{'*'.join(sig)}")
+                out_morph_preds2[k] = f"_2_{p}:{'*'.join(sig)}"
+                new_spec.preds.append(f"_2_{p}:{'*'.join(sig)}")
+                for i in range(len(axioms2)):
+                    axioms2[i] = re.sub(rf"(?=\b|.){p}(\b|.)", f"_2_{p}", axioms2[i])
     
         # Add ops
         dic_ops1 = {o : True for o in spec1.ops}
-        dic_ops2 = {o : True for o in spec1.ops}
+        dic_ops2 = {o : True for o in spec2.ops}
         for o0 in self.ops:
             o0, sig0 = o0.split(":")
             ret = None
@@ -482,31 +488,35 @@ class CASLSpecification:
                 dic_ops2[f"{morph_ops2[o0]}:{'*'.join(sig2)}{'->' + morph_sorts2[ret] if ret else ''}"] = False
 
                 sig = [out_morph_sorts1[s] for s in sig1]
-                out_morph_ops1[f"{morph_ops1[o0]}:{'*'.join(sig1)}{'->' + ret if ret else ''}"] = f"{morph_ops1[o0]}_+_{morph_ops2[o0]}:{'*'.join(sig)}{'->' + out_morph_sorts1[ret] if ret else ''}"
-                out_morph_ops2[f"{morph_ops2[o0]}:{'*'.join(sig2)}{'->' + ret if ret else ''}"] = f"{morph_ops1[o0]}_+_{morph_ops2[o0]}:{'*'.join(sig)}{'->' + out_morph_sorts2[ret] if ret else ''}"
-                new_spec.ops.append(f"{morph_ops1[o0]}_+_{morph_ops2[o0]}:{'*'.join(sig)}{'->' + out_morph_sorts1[ret] if ret else ''}")
+                out_morph_ops1[f"{morph_ops1[o0]}:{'*'.join(sig1)}{'->' + ret if ret else ''}"] = f"{o0}:{'*'.join(sig)}{'->' + out_morph_sorts1[ret] if ret else ''}"
+                out_morph_ops2[f"{morph_ops2[o0]}:{'*'.join(sig2)}{'->' + ret if ret else ''}"] = f"{o0}:{'*'.join(sig)}{'->' + out_morph_sorts2[ret] if ret else ''}"
+                new_spec.ops.append(f"{o0}:{'*'.join(sig)}{'->' + out_morph_sorts1[ret] if ret else ''}")
                 for i in range(len(axioms1)):
-                    axioms1[i] = re.sub(rf"(?=\b|.){morph_ops1[o0]}(\b|.)", f"{morph_ops1[o0]}_+_{morph_ops2[o0]}", axioms1[i])
+                    axioms1[i] = re.sub(rf"(?=\b|.){morph_ops1[o0]}(\b|.)", f"{o0}", axioms1[i])
                 for i in range(len(axioms2)):
-                    axioms2[i] = re.sub(rf"(?=\b|.){morph_ops2[o0]}(\b|.)", f"{morph_ops1[o0]}_+_{morph_ops2[o0]}", axioms2[i])
+                    axioms2[i] = re.sub(rf"(?=\b|.){morph_ops2[o0]}(\b|.)", f"{o0}", axioms2[i])
         for k, v in dic_ops1.items():
             o0, sig = k.split(":")
             ret = None
             if "->" in sig:
                 sig, ret = sig.split("->")
-            sig = [out_morph_sorts1[morph_sorts1[s]] if s in morph_sorts1.keys() else s for s in sig.split("*")]
+            sig = [out_morph_sorts1[s] if s in out_morph_sorts1.keys() else s for s in sig.split("*")]
             if v:
-                out_morph_ops1[k] = f"{o0}:{'*'.join(sig)}{'->' + out_morph_sorts1[ret] if ret else ''}"
-                new_spec.ops.append(f"{o0}:{'*'.join(sig)}{'->' + out_morph_sorts1[ret] if ret else ''}")
+                out_morph_ops1[k] = f"_1_{o0}:{'*'.join(sig)}{'->' + out_morph_sorts1[ret] if ret else ''}"
+                new_spec.ops.append(f"_1_{o0}:{'*'.join(sig)}{'->' + out_morph_sorts1[ret] if ret else ''}")
+                for i in range(len(axioms1)):
+                    axioms1[i] =  re.sub(rf"(?=\b|.){o0}(\b|.)", f"_1_{o0}", axioms1[i])
         for k, v in dic_ops2.items():
             o0, sig = k.split(":")
             ret = None
             if "->" in sig:
                 sig, ret = sig.split("->")
-            sig = [out_morph_sorts2[morph_sorts2[s]] if s in morph_sorts2.keys() else s for s in sig.split("*")]
+            sig = [out_morph_sorts2[s] if s in out_morph_sorts2.keys() else s for s in sig.split("*")]
             if v:
-                out_morph_ops2[k] = f"{o0}:{'*'.join(sig)}{'->' + out_morph_sorts2[ret] if ret else ''}"
-                new_spec.ops.append(f"{o0}:{'*'.join(sig)}{'->' + out_morph_sorts2[ret] if ret else ''}")
+                out_morph_ops2[k] = f"_2_{o0}:{'*'.join(sig)}{'->' + out_morph_sorts2[ret] if ret else ''}"
+                new_spec.ops.append(f"_2_{o0}:{'*'.join(sig)}{'->' + out_morph_sorts2[ret] if ret else ''}")
+                for i in range(len(axioms2)):
+                    axioms2[i] =  re.sub(rf"(?=\b|.){o0}(\b|.)", f"_2_{o0}", axioms2[i])
 
         # Add axioms
         new_spec.axioms = axioms1 + axioms2
@@ -524,10 +534,9 @@ class CASLSpecification:
             new_spec = copy.deepcopy(self)
             new_spec.axioms.remove(a)
             new_spec._axioms.remove(_a)
-            new_spec._tidy_signature()
+            #new_spec._tidy_signature()
             res.append(new_spec)
         return res
-
 
 
 if __name__ == "__main__":
@@ -541,8 +550,6 @@ if __name__ == "__main__":
     gen = CASLSpecification()
     gen.read_from_file("CASL Specifications\specs\G.txt")
 
-    gen.disjoint_union(csp1, csp2, gen.f2, gen.f1)
-
-    print(csp1)
-    #for i, spec in enumerate(source.axiom_elimination_operator()):
-        #spec.write_to_file(f"CASL Specifications\specs\spec_out_{i}.txt")
+    f1 = gen.get_morphisms(gen.f1)
+    f2 = gen.get_morphisms(gen.f2)
+    print(gen.disjoint_union(csp1, csp2, f2, f1)[1])

@@ -5,13 +5,23 @@ from feature_structure import FeatureStructure
 sys.path.append('../Amalgamation')
 from amalgam import Category, Span
 
-class FeatureTermCategory(Category): 
+class FeatureStructureCategory(Category): 
     def __init__(self):
         super().__init__()
 
     def generalisation_step(self, fs):
-        return fs.sort_generalisation_operator() + fs.variable_elimination_operator() + fs.variable_equality_elimination_operator()
-      
+        return fs.sort_generalisation_operator() + fs.node_elimination_operator() + fs.node_equality_elimination_operator()
+
+    def subsumes(self, fs1, fs2, f=None):
+        if f is None:
+            f = dict(zip(fs1.feat, fs1.feat))
+            t = dict(zip(fs1.sorts.keys(), fs1.sorts.keys()))
+            f = (f, t)
+        return fs1.subsumes(fs2, f)
+
+    def variant(self, fs1, fs2):
+        return self.subsumes(fs1, fs2) and self.subsumes(fs2, fs1)
+
     def pullback(self, fs1, fs2, f1):
         if f1 is None:
             f = dict(zip(fs1.feat, fs1.feat))
@@ -21,8 +31,11 @@ class FeatureTermCategory(Category):
         return fs1.antiunify(fs2, f1)
     
     def pushout(self, span):
-        return [span.csp1, span.csp_gen.disjoint_unify(span.csp1, span.csp2, span.f1, span.f2), span.csp2]
-    
+        return span.csp_gen.disjoint_unify(span.csp1, span.csp2, span.f1, span.f2)
+
+    def terminal(sefl, fs):
+        return len(fs.nodes) == 0
+
     def get_csp_gen(self, fs1, fs2):
         return self.pullback(fs1, fs2, None, None)
 
@@ -38,28 +51,38 @@ class FeatureTermCategory(Category):
                 sort_morph[k] = v
         return (feat_morph, sort_morph)
 
-    def is_monic(self, fs1, fs2, f):
-        f = self.restrict(f, fs1)
+    def is_monic(self, fs1, fs2, f=None):
+        if f is None:
+            f = dict(zip(fs1.feat, fs1.feat))
+            t = dict(zip(fs1.sorts.keys(), fs1.sorts.keys()))
+            f = (f, t)
+        else:
+            f = self.restrict(f, fs1)
 
-        # Check morph_f
-        dic_f = {f: False for f in fs2.feat}
-        for fe in f[0].values():
-            if dic_f[fe]:
-                return False
-            dic_f[fe] = True
+            # Check morph_f
+            dic_f = {f: False for f in fs2.feat}
+            for fe in f[0].values():
+                if dic_f[fe]:
+                    return False
+                dic_f[fe] = True
 
-        # Check morph_t
-        dic_t = {s: False for s in fs2.sorts.keys()}
-        for s in f[1].values():
-            if dic_t[s]:
-                return False
-            dic_t[s] = True
+            # Check morph_t
+            dic_t = {s: False for s in fs2.sorts.keys()}
+            for s in f[1].values():
+                if dic_t[s]:
+                    return False
+                dic_t[s] = True
 
         # Check subsumption morph       
         return fs1.subsumes_monic(fs2, f)
     
-    def is_epic(self, fs1, fs2, f):
-        f = self.restrict(f, fs1)
+    def is_epic(self, fs1, fs2, f=None):
+        if f is None:
+            f = dict(zip(fs1.feat, fs1.feat))
+            t = dict(zip(fs1.sorts.keys(), fs1.sorts.keys()))
+            f = (f, t)
+        else:
+            f = self.restrict(f, fs1)
 
         # Check morph_f
         for fe in fs2.feat:
@@ -127,11 +150,5 @@ if __name__ == "__main__":
     t = dict(zip(sorts.keys(), sorts.keys()))
     span = Span(fs1, fs2, (f, t), (f, t), fs0)    
 
-    ft = FeatureTermCategory()
-    ft.amalgamate(span)
-
-
-    span_gen = Span(ft.generalisation_step(fs1)[0], fs2, fs0.f1, fs0.f2, fs0)
-    ft.integration_measure(span, span_gen)
-    #for i, f in enumerate(ft.generalization_step(fs1)):
-    #    f.plot(filename = f"fs{i}.gv")
+    ft = FeatureStructureCategory()
+    ft.get_generalised_amalgams(1, span)

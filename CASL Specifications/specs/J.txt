@@ -1,61 +1,58 @@
 spec J =
 
 sorts 
-	Grade, ScaleSchema, Scale
-	%( ScaleSchema sort corresponds to the entire configuration defined 
-	in the specification, i.e., the image schema gestalt )%
-
-ops   scale : ScaleSchema -> Scale
-
-	scsc: ScaleSchema
-
-	a_scale: Scale
-	%( instantiate a ScaleSchema and a Scale )%
-	
-	gr_1, gr_2, gr_3, gr_4: Grade
-	%( instantiate four Grades )%
-
-preds
-	
-	inScale: Grade * Scale
-	%( predicate specifying that a Grade is "in" a Scale )%
-
-	more, less: Grade * Grade
-	%( predicates specifying that a Grade is "more" or less" than 
-	another one on the ScaleSchema )%
-
-
-%axioms% 
-	
-	forall s: ScaleSchema; x,y,z: Grade
-
-    	. forall c:Scale . exists! sc:ScaleSchema . scale(sc) = c
-
-    	%( distinct grades of a scale are comparable )%
-    	. inScale(x,scale(s)) /\ inScale(y,scale(s)) /\ not x = y
-    	=> more(x,y) \/ more(y,x)
-
-    	%( two comparable grades are on the same scale of a SCALARITY schema )%
-    	. more(x,y) => exists! sc:ScaleSchema
-    	. inScale(x,scale(sc)) /\ inScale(y,scale(sc))
+	SPGschema, Path, Location, Trajector
      
-    	%( less is the inverse of more )%
-    	. less(x,y) <=> more(y,x)
+ops
+	source, goal: SPGschema -> Location
+    path: SPGschema -> Path
+    trajector: SPGschema -> Trajector
 
-		%( ''more'' has the properties of a total order )%
+    l_1, l_2, l_3, l_4: Location
+	p_1: Path
+	s_1: SPGschema
 
-    	. not more(x,x)				%( irreflexive )%
-    	. more(x,y) /\ more(y,z) => more(x,z)	%( transitive )%
-		. more(x,y) => not more(y,x) %( asymmetry )%
+preds 
+	placed : Trajector * Location
+    inPath : Location * Path 
+    isFollowedBy: Location * Location * Path 
+    __contiguous__: Location * Location
+
+%axioms%
+    forall p : Path
+    	%( paths are always part of a unique path schema )%
+    	. exists! s:SPGschema . path(s) = p
+
+    forall s: SPGschema
+    	%( source and goal locations are in the path, and they are distinct )%
+    	. inPath(source(s),path(s))
+    	. inPath(goal(s),path(s))
+    	. not source(s) = goal(s) 
+    	%( trajectors are on a unique location in the path )%
+    	. exists! l:Location . inPath(l,path(s)) /\ placed(trajector(s),l) 
 
 
-	.scale(scsc)=a_scale
-	.inScale(gr_1,a_scale) .inScale(gr_2,a_scale)
-	.inScale(gr_3,a_scale) .inScale(gr_4,a_scale)
-	%( declare that the four instantiated Grades are 
-	in the instantiated ScaleSchema )%
+    forall k,l: Location; p: Path
+    	%( 'contiguous' is the symmetric closure of the following relation )%
+    	. k contiguous l <=> isFollowedBy(k,l,p) \/ isFollowedBy(l,k,p)
 
-	.more(gr_4,gr_3) .more(gr_3,gr_2) .more(gr_2,gr_1)
-	%( declare which Grade is "more" than which )%
+	forall s: SPGschema; l: Location
+    	. not (isFollowedBy(l,source(s),path(s)) \/ isFollowedBy(goal(s),l,path(s)))
+    	%( no location is followed by the source or follows the goal )%
+    	. inPath(l,path(s)) /\ (not l = source(s) ) 
+    		=> exists! k: Location . inPath(k,path(s)) /\ isFollowedBy(k,l,path(s))
+    	%( any location on the path, except the source, follows exactly one location on the same path )%
+    	. inPath(l,path(s)) /\ (not l = goal(s) ) 
+    		=> exists! m:Location . inPath(m,path(s)) /\ isFollowedBy(l,m,path(s))
+    	%( any location on the path, except the goal, is followed by exactly one location on the same path )%
 
-end 
+	forall k, l: Location; p: Path
+		.isFollowedBy(k,l,p) \/ isFollowedBy(l,k,p) => inPath(k,p) /\ inPath(l,p)
+		%( any two contiguous locations form a path that contains them )%
+
+
+	.isFollowedBy(l_2,l_1,p_1) .isFollowedBy(l_3,l_2,p_1) .isFollowedBy(l_4,l_3,p_1)
+
+	.source(s_1)=l_1 .path(s_1)=p_1 .goal(s_1)=l_4
+
+end

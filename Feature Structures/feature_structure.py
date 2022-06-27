@@ -12,7 +12,7 @@ def silentremove(filename):
     
 def sort_leq(sorts, s1, s2):
     """ Checks if s1 <= s2 in the sort hierarchy, that is if s2 is more specific than s1. """
-    s1, s2 = s1.replace("1.", "").replace("2.", ""), s2.replace("1.", "").replace("2.", "")
+    s1, s2 = s1.replace("_1_", "").replace("_2_", ""), s2.replace("_1_", "").replace("_2_", "")
 
     if s1 not in sorts.keys() or s2 not in sorts.keys():
         return False
@@ -77,9 +77,6 @@ class FeatureStructure:
             # Test types
             if not typing_func[q] in sorts.keys():
                 raise Exception("A node has invalid sort, please specify a valid feature structure.")
-            # Test nodes
-            if not isinstance(q, tuple) and q.startswith("_"):
-                raise Exception("Generated nodes will start with an underscore '_', avoid using them for node names.")
         
         for (f, q) in trans_func.keys():
             # Test features
@@ -126,7 +123,7 @@ class FeatureStructure:
         
         return set(self.nodes) == set(fs.nodes) and self.root == fs.root and self.typing_func == fs.typing_func and self.trans_func == fs.trans_func
 
-    def plot(self, name="Feature Structure", folder = "Feature Terms/plots/", filename="fs.gv", view=False):
+    def plot(self, name="Feature Structure", folder = "Feature Structures/plots/", filename="fs.gv", view=False):
         """ Plot a feature structure as a graph, using graphviz """
         g = graphviz.Digraph(name)
         g.attr(rankdir='LR', size='8,5')
@@ -172,6 +169,7 @@ class FeatureStructure:
                     if(
                         f1 in morph_f.keys() and
                         morph_f[f1] == f2 and 
+                        self.typing_func[self.trans_func[(f1, q1)]] in morph_t.keys() and
                         sort_leq(fs.sorts, morph_t[self.typing_func[self.trans_func[(f1, q1)]]], fs.typing_func[fs.trans_func[(f2, q2)]]) and
                         not (self.trans_func[(f1, q1)] == q1 and fs.trans_func[(f2, q2)] != q2)                  
                     ):
@@ -287,11 +285,6 @@ class FeatureStructure:
 
         return set(visited2) == set(fs.nodes)
 
-    def alphabetic_variant(self, fs, f):
-        """ Checks if two feature structures are alphabetic variants of each other """
-        morph_f, morph_t = f
-        return self.subsumes(fs, (morph_f, morph_t)) and fs.subsumes(self, (morph_f, morph_t))
-
     def antiunify(self, fs, f):
         """ Computes the antiunifier as the pair of common nodes """
         if not isinstance(fs, FeatureStructure):
@@ -332,12 +325,15 @@ class FeatureStructure:
         morph_f1, morph_t1 = f1
         morph_f2, morph_t2 = f2
 
+        out_morph_f1, out_morph_t1, out_morph_h1 = {}, {}, {}
+        out_morph_f2, out_morph_t2, out_morph_h2 = {}, {}, {}
+
         root = (self.root, fs1.root, fs2.root)
         nodes = [root]
         typing_func, trans_func = {}, {}
         typing_func[root] = self.typing_func[self.root]
         feat = []
-        sorts = self.sorts
+        sorts = copy.copy(self.sorts)
 
         flag = False
         for q00 in nodes:
@@ -359,6 +355,14 @@ class FeatureStructure:
                                 typing_func[node] = self.typing_func[node[0]]
                                 trans_func[(f0, q00)] = node
                                 feat.append(f0)
+
+                                out_morph_h1[q1] = node
+                                out_morph_f1[f1] = f0
+                                out_morph_t1[fs1.typing_func[q1]] = typing_func[node]
+                                out_morph_h2[q2] = node
+                                out_morph_f2[f2] = f0
+                                out_morph_t2[fs2.typing_func[q2]] = typing_func[node]
+
                                 break
                         if flag:
                             break
@@ -366,21 +370,31 @@ class FeatureStructure:
             for (f1, q1) in gen1:  
                 if not any([fs1.trans_func[(f1, q1)] == q[1] == q[2] for q in nodes]):
                     node = (None, fs1.trans_func[(f1, q1)], None)
-                    typing_func[node] = f"1.{fs1.typing_func[node[1]]}"
-                    sorts[f"1.{fs1.typing_func[node[1]]}"] = sorts[fs1.typing_func[node[1]]]
-                    trans_func[(f"1.{f1}", q00)] = node
-                    feat.append(f"1.{f1}")
+                    typing_func[node] = f"_1_{fs1.typing_func[node[1]]}"
+                    sorts[f"_1_{fs1.typing_func[node[1]]}"] = sorts[fs1.typing_func[node[1]]]
+                    trans_func[(f"_1_{f1}", q00)] = node
+                    feat.append(f"_1_{f1}")
                     nodes.append(node)
+
+                    out_morph_h1[q1] = node
+                    out_morph_f1[f1] = f"_1_{f1}"
+                    out_morph_t1[fs1.typing_func[q1]] = f"_1_{fs1.typing_func[node[1]]}"
             for (f2, q2) in gen2:  
                 if not any([fs2.trans_func[(f2, q2)] == q[1] == q[2] for q in nodes]):
                     node = (None, None, fs2.trans_func[(f2, q2)])
-                    typing_func[node] = f"2.{fs2.typing_func[node[2]]}"
-                    sorts[f"2.{fs2.typing_func[node[2]]}"] = sorts[fs2.typing_func[node[2]]]
-                    trans_func[(f"2.{f2}", q00)] = node
-                    feat.append(f"2.{f2}")
+                    typing_func[node] = f"_2_{fs2.typing_func[node[2]]}"
+                    sorts[f"_2_{fs2.typing_func[node[2]]}"] = sorts[fs2.typing_func[node[2]]]
+                    trans_func[(f"_2_{f2}", q00)] = node
+                    feat.append(f"_2_{f2}")
                     nodes.append(node)
-                    
-        return FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func)
+
+                    out_morph_h2[q2] = node
+                    out_morph_f2[f2] = f"_2_{f2}"
+                    out_morph_t2[fs2.typing_func[q2]] = f"_2_{fs2.typing_func[node[2]]}"
+        
+        f1 = (out_morph_f1, out_morph_t1, out_morph_h1)
+        f2 = (out_morph_f2, out_morph_t2, out_morph_h2)
+        return (f1, FeatureStructure(sorts, feat, nodes, root, typing_func, trans_func), f2)
 
     def sort_generalisation_operator(self):
         """ Generates all possible type generalised feature structures from self """
@@ -393,7 +407,7 @@ class FeatureStructure:
 
         return res
     
-    def variable_elimination_operator(self):
+    def node_elimination_operator(self):
         """ Generates alll possible generalisations via variable elimination from self """
 
         res = []
@@ -412,7 +426,7 @@ class FeatureStructure:
 
         return res
 
-    def variable_equality_elimination_operator(self, looping = True):
+    def node_equality_elimination_operator(self, looping = True):
         """
         Generates alll possible generalisations by breaking variable equality, the looping argument can 
         control if returning arrows should be kept or not, which can b ealmost thought of as a separate operator.
